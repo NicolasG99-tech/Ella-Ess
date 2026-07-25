@@ -1,0 +1,9 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Luna schläft lächelnd in ihrem Bett">
+  <rect width="400" height="300" fill="#2b3358"/>
+  <circle cx="330" cy="55" r="20" fill="#f4e9c9"/>
+  <rect x="130" y="200" width="140" height="20" fill="#6b4429"/>
+  <rect x="140" y="160" width="120" height="45" fill="#e0607a"/>
+  <circle cx="175" cy="175" r="24" fill="#f0c39a"/>
+  <path d="M155 168 Q175 140 195 168 L195 178 Q185 158 175 158 Q165 158 155 178 Z" fill="#3c2a1e"/>
+  <path d="M165 178 Q175 183 185 178" stroke="#a4593a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>

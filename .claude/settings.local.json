@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(git --version)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(command -v brew)",
+      "Bash([ -d \"$HOME/.nvm\" ])",
+      "Bash(command -v volta)",
+      "Read(//usr/local/bin/**)",
+      "Bash(command -v fnm)",
+      "Bash(sudo -n true)",
+      "Read(//opt/homebrew/**)",
+      "Bash(xcode-select -p)",
+      "Bash(docker info *)",
+      "Bash(brew --version)",
+      "Bash(otool -L /opt/homebrew/Cellar/git/2.55.0/libexec/git-core/git-remote-http)",
+      "Bash(env)",
+      "Read(//usr/lib/**)",
+      "Bash(sw_vers)",
+      "Bash(nm -gU /usr/lib/libcurl.4.dylib)",
+      "Bash(/usr/bin/curl --version)",
+      "Bash(/opt/homebrew/bin/brew reinstall *)",
+      "Bash(curl -L -o ~/Downloads/Docker.dmg \"https://desktop.docker.com/mac/main/arm64/Docker.dmg\" --progress-bar)",
+      "Bash(hdiutil attach *)",
+      "Read(//Volumes/Docker/**)",
+      "Bash(cp -R \"/Volumes/Docker/Docker.app\" /Applications/)",
+      "Bash(hdiutil detach *)",
+      "Bash(open -a Docker)",
+      "Bash(grep -rn \"runtimeExecutable\\\\|\\\\\"env\\\\\"\\\\|launch.json\" ~/.claude 2>/dev/null | grep -i \"schema\\\\|launch\" | head -20)",
+      "Bash(chmod +x \"/Users/nicolaskuttler/Desktop/Claude progamming/scripts/dev.sh\")",
+      "Bash(mkdir -p \"/Users/nicolaskuttler/Desktop/Claude progamming/src/lib/validation\" \\\\ *)"
+    ]
+  }
+}

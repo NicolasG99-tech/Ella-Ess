@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Das Design ist bislang bewusst nur für ein helles, warmes Farbschema
+   ausgelegt (siehe Startseite/Formulare); ein echtes Dark-Theme ist eine
+   spätere Design-Aufgabe, kein automatisches Umschalten auf Systemfarben. */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Barrierefreiheit: sichtbarer Fokus für Tastaturbedienung (WCAG 2.2 AA). */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Weiche Einblend-Animation für neu freigeschaltete Illustrationsebenen
+   (Meilenstein 5). Optional — siehe IllustrationStack.tsx, respektiert sowohl
+   die Kindprofil-Einstellung "reduzierte Animationen" als auch
+   prefers-reduced-motion (Regel unten). */
+@keyframes illustration-unlock {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-illustration-unlock {
+  animation: illustration-unlock 0.6s ease-out;
+}
+
+/* Respektiert die Systemeinstellung für reduzierte Bewegung. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

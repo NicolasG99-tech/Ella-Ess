@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Emma">
+  <circle cx="180" cy="110" r="34" fill="#f0c39a"/>
+  <path d="M146 105 Q180 55 214 105 L214 130 Q205 100 180 100 Q155 100 146 130 Z" fill="#e0a23a"/>
+  <circle cx="168" cy="112" r="3" fill="#2b1a10"/>
+  <circle cx="192" cy="112" r="3" fill="#2b1a10"/>
+  <path d="M170 128 Q180 133 190 128" stroke="#a4593a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M145 200 L150 145 Q180 130 210 145 L215 200 Z" fill="#4fa8a0"/>
+</svg>

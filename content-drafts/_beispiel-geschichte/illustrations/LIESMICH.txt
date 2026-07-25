@@ -1,0 +1,13 @@
+Hier liegen bei einer echten Geschichte fünf SVG-Dateien, benannt genau wie in
+meta.json unter "illustrationLayers" -> "name":
+
+  background.svg
+  main_character.svg
+  object.svg
+  secondary_character.svg
+  final_scene.svg
+
+Diese Beispiel-Geschichte (Ordner beginnt mit "_") wird von
+`npm run content:import` übersprungen und braucht deshalb keine echten
+SVG-Dateien — sie dient nur als Vorlage für das Format, siehe
+docs/CONTENT_AUTHORING.md.

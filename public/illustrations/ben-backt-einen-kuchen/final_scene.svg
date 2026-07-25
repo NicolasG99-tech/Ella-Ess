@@ -1,0 +1,10 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Der fertige Kuchen auf dem Tisch">
+  <rect width="400" height="300" fill="#fbe8b2"/>
+  <rect y="230" width="400" height="70" fill="#8a6a3f"/>
+  <ellipse cx="200" cy="220" rx="100" ry="18" fill="#c9c2b8"/>
+  <path d="M110 220 Q110 150 200 150 Q290 150 290 220 Z" fill="#a4642a"/>
+  <ellipse cx="200" cy="150" rx="90" ry="16" fill="#e0a23a"/>
+  <circle cx="170" cy="145" r="6" fill="#d94f4f"/>
+  <circle cx="200" cy="140" r="6" fill="#d94f4f"/>
+  <circle cx="230" cy="145" r="6" fill="#d94f4f"/>
+</svg>

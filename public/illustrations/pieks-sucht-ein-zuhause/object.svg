@@ -1,0 +1,6 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ein Haufen Herbstblätter">
+  <ellipse cx="200" cy="230" rx="110" ry="30" fill="#c9a15f" opacity="0.5"/>
+  <path d="M160 210 q20 -40 40 0 q20 -40 40 0 q10 -30 -10 -45 q-30 -15 -40 15 q-10 -30 -40 -15 q-20 15 -10 45 Z" fill="#d97b2e"/>
+  <path d="M140 220 q15 -25 30 0 Z" fill="#b5652b"/>
+  <path d="M240 220 q15 -25 30 0 Z" fill="#e0a23a"/>
+</svg>

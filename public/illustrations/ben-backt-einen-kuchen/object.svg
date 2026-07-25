@@ -1,0 +1,5 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eine Kuchenform mit Teig">
+  <ellipse cx="200" cy="200" rx="90" ry="26" fill="#c9c2b8"/>
+  <path d="M115 200 Q115 150 200 150 Q285 150 285 200 Z" fill="#f4d47a"/>
+  <ellipse cx="200" cy="150" rx="85" ry="16" fill="#f9e39a"/>
+</svg>

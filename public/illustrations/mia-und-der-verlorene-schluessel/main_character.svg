@@ -1,0 +1,9 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mia">
+  <circle cx="200" cy="110" r="35" fill="#f0c39a"/>
+  <path d="M165 100 Q200 55 235 100 L235 90 Q200 65 165 90 Z" fill="#7a4a2b"/>
+  <circle cx="188" cy="112" r="3" fill="#2b1a10"/>
+  <circle cx="212" cy="112" r="3" fill="#2b1a10"/>
+  <path d="M190 128 Q200 134 210 128" stroke="#a4593a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M160 200 L165 145 Q200 130 235 145 L240 200 Z" fill="#e0607a"/>
+  <rect x="170" y="200" width="60" height="70" fill="#e0607a"/>
+</svg>

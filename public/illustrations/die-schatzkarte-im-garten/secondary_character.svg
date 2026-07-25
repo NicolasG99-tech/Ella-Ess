@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Jonas">
+  <circle cx="240" cy="110" r="34" fill="#f0c39a"/>
+  <path d="M206 100 Q240 65 274 100 L274 92 Q240 75 206 92 Z" fill="#3c2a1e"/>
+  <circle cx="228" cy="112" r="3" fill="#2b1a10"/>
+  <circle cx="252" cy="112" r="3" fill="#2b1a10"/>
+  <path d="M230 128 Q240 133 250 128" stroke="#a4593a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M205 200 L210 145 Q240 130 270 145 L275 200 Z" fill="#d97b2e"/>
+</svg>

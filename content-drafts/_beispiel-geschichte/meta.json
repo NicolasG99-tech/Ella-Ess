@@ -1,0 +1,23 @@
+{
+  "slug": "_beispiel-geschichte",
+  "title": "Beispiel-Geschichte (nur zur Orientierung, wird nicht importiert)",
+  "description": "Dient als Vorlage für neue Geschichten — siehe docs/CONTENT_AUTHORING.md.",
+  "ageRange": "7-8",
+  "difficultyLevel": 1,
+  "learningGoals": ["kurze_woerter", "einfache_saetze"],
+  "illustrationLayers": [
+    { "name": "background", "renderOrder": 1, "unlockAfterSectionOrder": 1 },
+    { "name": "main_character", "renderOrder": 2, "unlockAfterSectionOrder": 1 },
+    { "name": "object", "renderOrder": 3, "unlockAfterSectionOrder": 1 },
+    { "name": "secondary_character", "renderOrder": 4, "unlockAfterSectionOrder": 2 },
+    { "name": "final_scene", "renderOrder": 5, "unlockAfterSectionOrder": 2 }
+  ],
+  "comprehensionQuestions": [
+    {
+      "order": 1,
+      "type": "statement",
+      "prompt": "Der Fuchs findet einen Freund.",
+      "correctAnswer": true
+    }
+  ]
+}

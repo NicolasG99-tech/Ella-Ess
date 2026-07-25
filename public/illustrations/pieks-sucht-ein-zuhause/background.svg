@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Herbstlicher Wald">
+  <rect width="400" height="300" fill="#f6debd"/>
+  <rect y="220" width="400" height="80" fill="#c9a15f"/>
+  <circle cx="330" cy="60" r="34" fill="#f4b942"/>
+  <path d="M40 220 L60 120 L80 220 Z" fill="#b5652b"/>
+  <path d="M100 220 L125 90 L150 220 Z" fill="#c97a3a"/>
+  <path d="M300 220 L320 130 L340 220 Z" fill="#b5652b"/>
+</svg>

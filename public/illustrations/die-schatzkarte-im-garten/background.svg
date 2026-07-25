@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ein Garten mit großem Baum">
+  <rect width="400" height="300" fill="#bfe3f7"/>
+  <rect y="210" width="400" height="90" fill="#7fc06b"/>
+  <rect x="270" y="120" width="30" height="100" fill="#6b4429"/>
+  <circle cx="285" cy="100" r="60" fill="#4f9a4a"/>
+  <circle cx="60" cy="240" r="18" fill="#8a9a5a"/>
+  <circle cx="100" cy="250" r="14" fill="#8a9a5a"/>
+</svg>

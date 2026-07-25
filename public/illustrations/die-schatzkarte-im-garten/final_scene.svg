@@ -1,0 +1,10 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Die geöffnete Holzkiste mit Murmeln">
+  <rect width="400" height="300" fill="#bfe3f7"/>
+  <rect y="210" width="400" height="90" fill="#7fc06b"/>
+  <rect x="150" y="190" width="100" height="60" fill="#8a5a3b"/>
+  <path d="M140 190 L260 190 L245 160 L155 160 Z" fill="#a4642a"/>
+  <circle cx="180" cy="215" r="10" fill="#4fa8a0"/>
+  <circle cx="205" cy="220" r="8" fill="#d94f4f"/>
+  <circle cx="225" cy="212" r="9" fill="#f4c430"/>
+  <rect x="190" y="230" width="40" height="25" fill="#f2ead9"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eine silberne Rakete">
+  <path d="M200 70 Q230 120 220 220 L180 220 Q170 120 200 70 Z" fill="#c9c2b8"/>
+  <path d="M190 220 L175 250 L192 220 Z" fill="#d94f4f"/>
+  <path d="M210 220 L225 250 L208 220 Z" fill="#d94f4f"/>
+  <circle cx="200" cy="140" r="14" fill="#4a90d9"/>
+  <path d="M200 70 Q210 90 200 105 Q190 90 200 70 Z" fill="#d94f4f"/>
+</svg>

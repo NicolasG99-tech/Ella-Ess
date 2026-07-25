@@ -1,0 +1,10 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Die Eule Frieda">
+  <ellipse cx="150" cy="130" rx="45" ry="55" fill="#7a6248"/>
+  <circle cx="132" cy="115" r="18" fill="#f2ead9"/>
+  <circle cx="168" cy="115" r="18" fill="#f2ead9"/>
+  <circle cx="132" cy="115" r="7" fill="#2b1a10"/>
+  <circle cx="168" cy="115" r="7" fill="#2b1a10"/>
+  <path d="M150 128 L142 140 L158 140 Z" fill="#e0a23a"/>
+  <path d="M110 150 L90 175 L120 165 Z" fill="#7a6248"/>
+  <path d="M190 150 L210 175 L180 165 Z" fill="#7a6248"/>
+</svg>

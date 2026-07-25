@@ -1,0 +1,4 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eine funkelnde Sternschnuppe">
+  <path d="M260 90 L270 115 L295 118 L275 133 L282 158 L260 144 L238 158 L245 133 L225 118 L250 115 Z" fill="#f9e39a"/>
+  <path d="M260 90 L150 180" stroke="#f9e39a" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+</svg>

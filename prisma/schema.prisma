@@ -1,0 +1,656 @@
+// Prisma-Schema für die Lese-Lernapp.
+// Siehe docs/ARCHITECTURE.md für den Datenfluss und docs/SECURITY.md für Zugriffsregeln.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth & Rollen
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  parent
+  specialist
+  teacher
+  admin
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  role          UserRole  @default(parent)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts                Account[]
+  sessions                Session[]
+  childProfiles           ChildProfile[]
+  consentRecords          ConsentRecord[]
+  specialistProfile       SpecialistProfile?
+  teacherProfile          TeacherProfile?
+  accessGrantsMade        ChildAccessGrant[]   @relation("GrantedByParent")
+  teacherAccessGrantsMade TeacherAccessGrant[] @relation("TeacherGrantedByParent")
+  auditEvents             AuditEvent[]         @relation("AuditActor")
+
+  @@index([role])
+}
+
+// Auth.js-kompatible Adapter-Tabellen (für spätere OAuth-Provider vorbereitet;
+// das MVP nutzt Credentials-Login mit JWT-Sessions, siehe lib/server/auth.ts).
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum ConsentType {
+  terms_of_service
+  privacy_policy
+  child_data_processing
+}
+
+model ConsentRecord {
+  id         String      @id @default(cuid())
+  userId     String
+  type       ConsentType
+  version    String
+  acceptedAt DateTime    @default(now())
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, version])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Kinderprofile & Lernprofile
+// ---------------------------------------------------------------------------
+
+enum LearningProfileCode {
+  reading_basics
+  fluency
+  spelling_basics
+}
+
+model LearningProfile {
+  id          String              @id @default(cuid())
+  code        LearningProfileCode @unique
+  name        String
+  description String
+  focusAreas  Json
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  childProfiles  ChildProfile[]
+  literacySkills LiteracySkill[]
+  exercises      Exercise[]
+}
+
+model LiteracySkill {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  name              String
+  description       String
+  learningProfileId String?
+  createdAt         DateTime @default(now())
+
+  learningProfile LearningProfile? @relation(fields: [learningProfileId], references: [id])
+  skillProgress   SkillProgress[]
+
+  @@index([learningProfileId])
+}
+
+model ChildProfile {
+  id                       String   @id @default(cuid())
+  parentId                 String
+  displayName              String
+  birthYear                Int
+  avatarKey                String   @default("avatar-01")
+  currentLearningProfileId String?
+  fontScale                Float    @default(1.0)
+  lineSpacingScale         Float    @default(1.0)
+  reducedMotion            Boolean  @default(false)
+  audioHintsEnabled        Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  parent                 User             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  currentLearningProfile LearningProfile? @relation(fields: [currentLearningProfileId], references: [id])
+
+  readingSessions     ReadingSession[]
+  spellingAttempts    SpellingAttempt[]
+  skillProgress       SkillProgress[]
+  earnedRewards       EarnedReward[]
+  accessGrants        ChildAccessGrant[]
+  teacherAccessGrants TeacherAccessGrant[]
+
+  @@index([parentId])
+}
+
+// ---------------------------------------------------------------------------
+// Kuratierte Inhalte
+// ---------------------------------------------------------------------------
+
+model Story {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  description     String
+  ageRange        String
+  difficultyLevel Int
+  learningGoals   Json
+  coverImageKey   String?
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sections               StorySection[]
+  illustrationLayers     IllustrationLayer[]
+  comprehensionQuestions ComprehensionQuestion[]
+  readingSessions        ReadingSession[]
+
+  @@index([difficultyLevel])
+}
+
+model StorySection {
+  id            String @id @default(cuid())
+  storyId       String
+  order         Int
+  text          String
+  expectedWords Json
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, order])
+  @@index([storyId])
+}
+
+enum IllustrationLayerName {
+  background
+  main_character
+  object
+  secondary_character
+  final_scene
+}
+
+model IllustrationLayer {
+  id                      String                @id @default(cuid())
+  storyId                 String
+  name                    IllustrationLayerName
+  assetKey                String
+  renderOrder             Int
+  unlockAfterSectionOrder Int
+  // Optionale Wortposition INNERHALB des Abschnitts `unlockAfterSectionOrder`,
+  // ab der freigeschaltet wird (statt erst bei Abschnittsende). Wird beim
+  // Seeden aus einem `[[unlock:<layerName>]]`-Marker im Story-Text abgeleitet
+  // (siehe lib/content/parseUnlockCheckpoints.ts) — nicht manuell gepflegt.
+  // `null` = klassisches Verhalten, Freischaltung erst bei Abschnittsende.
+  unlockAfterWordIndex Int?
+
+  story                 Story                  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  unlockedIllustrations UnlockedIllustration[]
+
+  @@unique([storyId, name])
+  @@index([storyId])
+}
+
+enum ComprehensionQuestionType {
+  multiple_choice
+  ordering
+  statement
+  inference
+}
+
+model ComprehensionQuestion {
+  id            String                    @id @default(cuid())
+  storyId       String
+  order         Int
+  type          ComprehensionQuestionType
+  prompt        String
+  options       Json?
+  correctAnswer Json
+  hintText      String?
+  createdAt     DateTime                  @default(now())
+
+  story    Story                  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  attempts ComprehensionAttempt[]
+
+  @@unique([storyId, order])
+  @@index([storyId])
+}
+
+model ComprehensionAttempt {
+  id                      String   @id @default(cuid())
+  readingSessionId        String
+  comprehensionQuestionId String
+  attemptNumber           Int
+  submittedAnswer         Json
+  isCorrect               Boolean
+  createdAt               DateTime @default(now())
+
+  readingSession        ReadingSession        @relation(fields: [readingSessionId], references: [id], onDelete: Cascade)
+  comprehensionQuestion ComprehensionQuestion @relation(fields: [comprehensionQuestionId], references: [id], onDelete: Cascade)
+
+  @@index([readingSessionId])
+  @@index([comprehensionQuestionId])
+}
+
+enum ExerciseType {
+  word_reading
+  spelling_gap_fill
+  letter_order
+  syllable_build
+  dictation
+}
+
+model Exercise {
+  id                String       @id @default(cuid())
+  type              ExerciseType
+  title             String
+  difficultyLevel   Int
+  learningProfileId String?
+  createdAt         DateTime     @default(now())
+
+  learningProfile LearningProfile? @relation(fields: [learningProfileId], references: [id])
+  items           ExerciseItem[]
+
+  @@index([learningProfileId])
+}
+
+model ExerciseItem {
+  id               String   @id @default(cuid())
+  exerciseId       String
+  order            Int
+  prompt           String
+  solution         String
+  acceptedVariants Json?
+  audioText        String?
+  createdAt        DateTime @default(now())
+
+  exercise         Exercise          @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  spellingAttempts SpellingAttempt[]
+
+  @@unique([exerciseId, order])
+  @@index([exerciseId])
+}
+
+// ---------------------------------------------------------------------------
+// Lesesitzungen & Bewertung
+// ---------------------------------------------------------------------------
+
+enum ReadingSessionStatus {
+  active
+  completed
+  abandoned
+}
+
+model ReadingSession {
+  id                  String               @id @default(cuid())
+  childProfileId      String
+  storyId             String
+  status              ReadingSessionStatus @default(active)
+  currentSectionOrder Int                  @default(0)
+  startedAt           DateTime             @default(now())
+  completedAt         DateTime?
+
+  childProfile ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  story        Story        @relation(fields: [storyId], references: [id], onDelete: Restrict)
+
+  readingAttempts       ReadingAttempt[]
+  comprehensionAttempts ComprehensionAttempt[]
+  earnedRewards         EarnedReward[]
+  unlockedIllustrations UnlockedIllustration[]
+
+  @@index([childProfileId])
+  @@index([storyId])
+}
+
+// Konservative Bewertungszustände, siehe docs/EDUCATIONAL_MODEL.md
+enum EvaluationState {
+  correct
+  likely_correct
+  possible_error
+  unclear_audio
+  self_corrected
+  skipped
+  unavailable
+}
+
+model ReadingAttempt {
+  id                 String          @id @default(cuid())
+  readingSessionId   String
+  sectionOrder       Int
+  attemptNumber      Int
+  state              EvaluationState
+  retryCount         Int             @default(0)
+  positionConfidence Float
+  createdAt          DateTime        @default(now())
+
+  readingSession  ReadingSession   @relation(fields: [readingSessionId], references: [id], onDelete: Cascade)
+  wordEvaluations WordEvaluation[]
+
+  @@index([readingSessionId])
+}
+
+model WordEvaluation {
+  id               String          @id @default(cuid())
+  readingAttemptId String
+  wordIndex        Int
+  expectedWord     String
+  recognizedWord   String?
+  confidence       Float
+  state            EvaluationState
+  createdAt        DateTime        @default(now())
+
+  readingAttempt ReadingAttempt @relation(fields: [readingAttemptId], references: [id], onDelete: Cascade)
+
+  @@index([readingAttemptId])
+}
+
+model UnlockedIllustration {
+  id                  String   @id @default(cuid())
+  readingSessionId    String
+  illustrationLayerId String
+  unlockedAt          DateTime @default(now())
+
+  readingSession    ReadingSession    @relation(fields: [readingSessionId], references: [id], onDelete: Cascade)
+  illustrationLayer IllustrationLayer @relation(fields: [illustrationLayerId], references: [id], onDelete: Cascade)
+
+  @@unique([readingSessionId, illustrationLayerId])
+  @@index([readingSessionId])
+}
+
+model SpellingAttempt {
+  id              String   @id @default(cuid())
+  childProfileId  String
+  exerciseItemId  String
+  attemptNumber   Int
+  submittedAnswer String
+  isCorrect       Boolean
+  createdAt       DateTime @default(now())
+
+  childProfile ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  exerciseItem ExerciseItem @relation(fields: [exerciseItemId], references: [id], onDelete: Cascade)
+
+  @@index([childProfileId])
+  @@index([exerciseItemId])
+}
+
+model SkillProgress {
+  id              String   @id @default(cuid())
+  childProfileId  String
+  literacySkillId String
+  masteryLevel    Float    @default(0)
+  lastPracticedAt DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  childProfile  ChildProfile  @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  literacySkill LiteracySkill @relation(fields: [literacySkillId], references: [id], onDelete: Cascade)
+
+  @@unique([childProfileId, literacySkillId])
+  @@index([childProfileId])
+}
+
+// ---------------------------------------------------------------------------
+// Gamification
+// ---------------------------------------------------------------------------
+
+enum RewardType {
+  star
+  xp_badge
+  avatar_item
+}
+
+enum RewardSourceType {
+  reading_session
+  exercise
+  regular_practice
+}
+
+model Reward {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  type        RewardType
+  name        String
+  description String
+  xpValue     Int        @default(0)
+  assetKey    String?
+  createdAt   DateTime   @default(now())
+
+  earnedRewards EarnedReward[]
+}
+
+model EarnedReward {
+  id               String           @id @default(cuid())
+  childProfileId   String
+  rewardId         String
+  readingSessionId String?
+  sourceType       RewardSourceType
+  earnedAt         DateTime         @default(now())
+
+  childProfile   ChildProfile    @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  reward         Reward          @relation(fields: [rewardId], references: [id], onDelete: Restrict)
+  readingSession ReadingSession? @relation(fields: [readingSessionId], references: [id], onDelete: SetNull)
+
+  @@index([childProfileId])
+}
+
+// ---------------------------------------------------------------------------
+// Fachkräftevorbereitung
+// ---------------------------------------------------------------------------
+
+model SpecialistProfile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  credentials String?
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessGrants ChildAccessGrant[]
+  feedback     SpecialistFeedback[]
+}
+
+model ChildAccessGrant {
+  id                  String    @id @default(cuid())
+  childProfileId      String
+  specialistProfileId String
+  grantedByUserId     String
+  scope               Json
+  expiresAt           DateTime?
+  revokedAt           DateTime?
+  createdAt           DateTime  @default(now())
+
+  childProfile      ChildProfile      @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  specialistProfile SpecialistProfile @relation(fields: [specialistProfileId], references: [id], onDelete: Cascade)
+  grantedByParent   User              @relation("GrantedByParent", fields: [grantedByUserId], references: [id], onDelete: Cascade)
+
+  feedback         SpecialistFeedback[]
+  feedbackRequests FeedbackRequest[]
+
+  @@index([childProfileId])
+  @@index([specialistProfileId])
+}
+
+model SpecialistFeedback {
+  id                 String   @id @default(cuid())
+  childAccessGrantId String
+  authorProfileId    String
+  note               String
+  createdAt          DateTime @default(now())
+
+  childAccessGrant ChildAccessGrant  @relation(fields: [childAccessGrantId], references: [id], onDelete: Cascade)
+  authorProfile    SpecialistProfile @relation(fields: [authorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([childAccessGrantId])
+}
+
+enum FeedbackRequestStatus {
+  open
+  responded
+  closed
+}
+
+model FeedbackRequest {
+  id                 String                @id @default(cuid())
+  childAccessGrantId String
+  requestedByUserId  String
+  message            String?
+  status             FeedbackRequestStatus @default(open)
+  createdAt          DateTime              @default(now())
+
+  childAccessGrant ChildAccessGrant @relation(fields: [childAccessGrantId], references: [id], onDelete: Cascade)
+
+  @@index([childAccessGrantId])
+}
+
+// ---------------------------------------------------------------------------
+// Lehrkräfte — eigenständige Rolle neben Fachkräften (Logopädie/Ergotherapie).
+// Bewusst als eigenes, paralleles Modell statt Wiederverwendung von
+// SpecialistProfile/ChildAccessGrant: unterschiedlicher beruflicher Kontext
+// (Schule statt Therapie), eigene Registrierung/Verifizierung, eigene
+// Zugriffsverwaltung durch Eltern. Die Fortschrittsdaten, die eine Lehrkraft
+// sieht, kommen aus demselben generischen Assessment-Modul wie bei
+// Fachkräften (siehe src/lib/progress/assessmentService.ts).
+// ---------------------------------------------------------------------------
+
+model TeacherProfile {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  schoolName String?
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessGrants TeacherAccessGrant[]
+  feedback     TeacherFeedback[]
+}
+
+model TeacherAccessGrant {
+  id               String    @id @default(cuid())
+  childProfileId   String
+  teacherProfileId String
+  grantedByUserId  String
+  scope            Json
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  childProfile    ChildProfile   @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  teacherProfile  TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  grantedByParent User           @relation("TeacherGrantedByParent", fields: [grantedByUserId], references: [id], onDelete: Cascade)
+
+  feedback         TeacherFeedback[]
+  feedbackRequests TeacherFeedbackRequest[]
+
+  @@index([childProfileId])
+  @@index([teacherProfileId])
+}
+
+model TeacherFeedback {
+  id                   String   @id @default(cuid())
+  teacherAccessGrantId String
+  authorProfileId      String
+  note                 String
+  createdAt            DateTime @default(now())
+
+  teacherAccessGrant TeacherAccessGrant @relation(fields: [teacherAccessGrantId], references: [id], onDelete: Cascade)
+  authorProfile      TeacherProfile     @relation(fields: [authorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([teacherAccessGrantId])
+}
+
+model TeacherFeedbackRequest {
+  id                   String                @id @default(cuid())
+  teacherAccessGrantId String
+  requestedByUserId    String
+  message              String?
+  status               FeedbackRequestStatus @default(open)
+  createdAt            DateTime              @default(now())
+
+  teacherAccessGrant TeacherAccessGrant @relation(fields: [teacherAccessGrantId], references: [id], onDelete: Cascade)
+
+  @@index([teacherAccessGrantId])
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  targetType  String
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+}
+
+// ---------------------------------------------------------------------------
+// Rate Limiting
+// ---------------------------------------------------------------------------
+
+// Zentraler, DB-gestützter Rate-Limiter (fixed window) — ersetzt den
+// früheren In-Memory-Ansatz (siehe src/lib/server/rate-limit.ts), der pro
+// Node-Prozess lief und Neustarts nicht überlebte. Bewusst über Prisma/
+// Postgres statt Redis umgesetzt: keine zusätzliche Infrastruktur-Abhängigkeit,
+// nutzt die ohnehin vorhandene Datenbank. Pro Schlüssel (z.B. "login:<email>")
+// existiert höchstens eine Zeile — das Wachstum der Tabelle ist durch die
+// Anzahl unterschiedlicher Schlüssel begrenzt, kein unbegrenztes Anhängen.
+model RateLimitBucket {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+
+  @@index([windowStart])
+}

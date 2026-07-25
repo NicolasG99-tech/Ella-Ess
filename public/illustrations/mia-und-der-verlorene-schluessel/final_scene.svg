@@ -1,0 +1,12 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mia und Minka vor der offenen Tür">
+  <rect width="400" height="300" fill="#bfe3f7"/>
+  <rect y="220" width="400" height="80" fill="#7fc06b"/>
+  <rect x="140" y="70" width="140" height="150" fill="#e3c9a0"/>
+  <rect x="180" y="110" width="60" height="110" fill="#3c2a1e"/>
+  <circle cx="230" cy="165" r="4" fill="#f4c430"/>
+  <circle cx="190" cy="235" r="30" fill="#f0c39a"/>
+  <path d="M165 225 Q190 195 215 225" fill="#7a4a2b"/>
+  <rect x="175" y="250" width="30" height="45" fill="#e0607a"/>
+  <ellipse cx="245" cy="270" rx="22" ry="14" fill="#d9924a"/>
+  <circle cx="235" cy="258" r="12" fill="#d9924a"/>
+</svg>

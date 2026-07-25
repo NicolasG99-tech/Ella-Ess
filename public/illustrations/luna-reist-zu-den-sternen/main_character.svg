@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Luna">
+  <circle cx="200" cy="150" r="34" fill="#f0c39a"/>
+  <path d="M166 145 Q200 95 234 145 L234 165 Q220 130 200 130 Q180 130 166 165 Z" fill="#3c2a1e"/>
+  <circle cx="188" cy="152" r="3" fill="#2b1a10"/>
+  <circle cx="212" cy="152" r="3" fill="#2b1a10"/>
+  <path d="M190 168 Q200 173 210 168" stroke="#a4593a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M165 240 L170 185 Q200 170 230 185 L235 240 Z" fill="#7a5aa8"/>
+</svg>

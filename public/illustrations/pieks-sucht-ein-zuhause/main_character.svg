@@ -1,0 +1,7 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Der Igel Pieks">
+  <ellipse cx="200" cy="190" rx="70" ry="50" fill="#8a5a3b"/>
+  <path d="M140 180 L110 150 M150 160 L115 120 M165 145 L140 100 M185 135 L170 85 M205 130 L200 78 M225 135 L235 85 M245 145 L265 100 M260 160 L290 120 M270 180 L300 150" stroke="#6b4429" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="235" cy="185" r="18" fill="#c98a5e"/>
+  <circle cx="242" cy="180" r="3" fill="#2b1a10"/>
+  <circle cx="252" cy="188" r="2.5" fill="#2b1a10"/>
+</svg>

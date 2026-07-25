@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ein sonniger Vorgarten">
+  <rect width="400" height="300" fill="#bfe3f7"/>
+  <circle cx="340" cy="55" r="30" fill="#f9d64b"/>
+  <rect y="200" width="400" height="100" fill="#7fc06b"/>
+  <rect x="150" y="90" width="120" height="110" fill="#e3c9a0"/>
+  <path d="M140 90 L210 40 L280 90 Z" fill="#b5652b"/>
+  <rect x="195" y="140" width="30" height="60" fill="#6b4429"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pieks in seiner warmen Höhle">
+  <rect width="400" height="300" fill="#3c2a1e"/>
+  <path d="M40 300 Q200 60 360 300 Z" fill="#5a3d29"/>
+  <ellipse cx="200" cy="230" rx="120" ry="60" fill="#26170f"/>
+  <ellipse cx="200" cy="235" rx="60" ry="35" fill="#8a5a3b"/>
+  <path d="M170 225 L155 210 M180 215 L170 195 M195 210 L192 188 M210 210 L216 190 M225 218 L238 200" stroke="#6b4429" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="217" cy="232" r="12" fill="#c98a5e"/>
+  <circle cx="222" cy="229" r="2" fill="#2b1a10"/>
+</svg>
