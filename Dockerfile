@@ -20,6 +20,12 @@ RUN npm ci
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+# Der generierte Prisma-Client liegt wegen des eigenen "output"-Pfads in
+# prisma/schema.prisma (src/generated/prisma) NICHT in node_modules und ist
+# über .gitignore bewusst nicht im Repo — muss deshalb explizit aus der
+# deps-Stage übernommen werden, sonst schlägt "npm run build" mit
+# "Module not found: Can't resolve '@/generated/prisma/client'" fehl.
+COPY --from=deps /app/src/generated/prisma ./src/generated/prisma
 COPY . .
 
 # Next Telemetry ist im Projekt bereits deaktiviert (siehe docs/SECURITY.md),
