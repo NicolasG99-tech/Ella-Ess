@@ -426,6 +426,14 @@ alle Kernfälle ab.
 Bewertungszustands, ob vorgerückt, wiederholt oder (nach max. 2 Wiederholungen) Hilfe
 angeboten wird — rein, ohne Seiteneffekte, 9 Unit-Tests.
 
+**Geplant, noch nicht implementiert** (siehe docs/EDUCATIONAL_MODEL.md, „Passive
+Sprachvorbild-Elemente"): Textabschnitte sollen künftig aktiv zu lesende und passiv
+vorgelesene Zeilen mischen. `deriveExpectedWords` und `alignToTargetText` müssten dafür
+zwischen beiden Zeilenrollen unterscheiden — passive Zeilen dürfen nicht in die
+„expected words"-Zählung eingehen, sonst würde das System auf nie gesprochene Wörter
+warten. Bei Umsetzung: diesen Abschnitt durch die konkrete technische Beschreibung
+ersetzen.
+
 ## Provider-Abstraktion
 
 `SpeechRecognitionProvider`-Interface (`transcribeAudio`, `alignToTargetText`,

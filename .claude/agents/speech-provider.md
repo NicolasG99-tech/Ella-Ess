@@ -34,6 +34,19 @@ Bei jeder Anfrage, die auf Aktivierung eines echten Providers in einer Nicht-Lok
 
 Stattdessen gilt **nicht-persistente Verarbeitung + EU-/deutsche Datenzone** (siehe „Zentrale Leitplanke" oben) als primäre, festgelegte Schutzmaßnahme gegen das Datenleck-Risiko.
 
+## Geplant, noch nicht implementiert: Ergebnisse als Datenquelle für adaptive Wortwiederholung
+Siehe docs/EDUCATIONAL_MODEL.md, „Adaptive individuelle Wortwiederholung". Sobald ein
+echter Provider (z. B. Azure) wortgenaue Aussprachebewertungen liefert, sollen diese
+langfristig in einen individuellen Übungswortschatz pro Kind einfließen. Bei Umsetzung:
+nur das Wort/Muster-Ergebnis persistieren, **niemals Rohaudio oder audio-abgeleitete
+Merkmale** über die aktuelle, nicht-persistente Verarbeitung hinaus speichern — das
+würde die „Zentrale Leitplanke" oben unterlaufen. Neues Datenmodell dafür mit
+`backend-dev`- und `privacy-security`-Agent abstimmen, bevor Schema-Änderungen
+entstehen. Separat zu prüfen, falls passive Sprachvorbild-Elemente (Text-to-Speech für
+korrekte Aussprache) umgesetzt werden: das ist ein eigener, von der Spracherkennung
+unabhängiger Provider-Typ (Text → Sprache, keine Kinderaudio-Übertragung), aber auch
+dafür gilt die AVV-/Anbieterprüfung aus diesem Agenten, nur mit anderem Datenfluss.
+
 ## Vor Abschluss einer Aufgabe
 - Bei neuen/geänderten Providern: `npm run typecheck` und `npm run lint` laufen lassen (Web-Audio-API-Code kann nicht sinnvoll mit Vitest/jsdom unit-getestet werden — das ist bekannt und kein Grund, Tests zu erzwingen, aber die reinen Hilfsfunktionen in `defaultProviderHelpers.ts`/`positionTracker.ts` bleiben unit-testbar und sollten es bleiben).
 - Bei Änderungen an `docs/ARCHITECTURE.md`/`docs/SECURITY.md` erforderlich: beide zusammen aktualisieren, nicht nur eine der beiden Dateien (Audioverarbeitung ist in beiden dokumentiert).

@@ -32,6 +32,17 @@ Keine Lerntexte werden während einer Kindersitzung durch ein Sprachmodell gener
 ## Grenzen automatischer Auswertung
 Fähigkeiten werden als beschreibendes Label (Wird geübt/Wird sicherer/Sicher) plus Balkenlänge dargestellt, nie als Prozentzahl oder Schulnote. Kein „Lesealter", keine Rangliste, kein Kinder-/Klassenvergleich.
 
+## Geplant, noch nicht implementiert: adaptive Wortwiederholung & passive Sprachvorbild-Elemente
+Siehe docs/EDUCATIONAL_MODEL.md, Abschnitte „Adaptive individuelle Wortwiederholung" und
+„Passive Sprachvorbild-Elemente" — Konzept für einen individuellen, dem Kind
+zugeordneten Übungswortschatz, der zukünftige Textauswahl beeinflusst (auch in passiv
+vorgelesenen Abschnitten). Bei Umsetzung zwei Leitplanken aus diesem Agenten strikt
+weiterführen: (1) Textauswahl bleibt **Filterung/Priorisierung aus kuratiertem
+Content**, keine Laufzeit-Texterzeugung (widerspricht sonst „Content-Freigabeprozess"
+oben); (2) der Übungswortschatz ist **kein sichtbares Fehlerprofil** — bei jeder
+Anzeige (falls überhaupt vorgesehen) dieselben Regeln wie bei allen
+Fortschrittsanzeigen prüfen (keine Prozentzahlen, keine Fehlerzähler, nicht wertend).
+
 ## Vorgehen
 1. Neuen/geänderten Content oder Feedback-Text lesen.
 2. Gegen die verbotenen Formulierungen und die obigen Regeln prüfen (es gibt bereits einen Unit-Test dafür, `tests/unit/session-state-machine.test.ts` – neue Feedback-Quellen sollten einen analogen Test bekommen, dafür ggf. `qa-testing`-Agent hinzuziehen).

@@ -18,6 +18,15 @@ Server Actions (Zod-validiert) → zentrale `authz()`-Guards → `lib/server/*`.
 5. **Kein Roh-SQL** – ausschließlich Prisma (parametrisierte Queries), schützt vor SQL-Injection.
 6. **Migrations sauber versionieren**: `npm run db:migrate` lokal (interaktiv), `npm run db:migrate:deploy` für CI/Produktion – niemals Schema-Änderungen ohne Migration-File.
 
+## Geplant, noch nicht implementiert: individueller Übungswortschatz pro Kind
+Siehe docs/EDUCATIONAL_MODEL.md, „Adaptive individuelle Wortwiederholung". Sobald dafür
+ein Datenmodell entsteht (z. B. ein neues `ChildWordDifficulty`-artiges Modell): folgt
+denselben Mustern wie bestehende Kind-Daten (cuid-IDs, Eigentümerschafts-Filter,
+Kaskaden-Löschung bei Kontolöschung) — kein Sonderfall. Zusätzlich vorab klären
+(siehe offene Fragen in EDUCATIONAL_MODEL.md): Granularität (Wort vs. Muster) und
+Lösch-/Ablaufkriterium, bevor das Schema fixiert wird — nachträgliche Änderungen an der
+Granularität sind migrationstechnisch aufwändiger als vorher einmal zu klären.
+
 ## Vor Abschluss einer Aufgabe
 - Neue Tabellen/Felder mit personenbezogenen Kind-Daten: `privacy-security`-Agent hinzuziehen.
 - Neue Server Action gegen das 5-Schritte-Autorisierungsmuster prüfen, bevor sie als fertig gilt.

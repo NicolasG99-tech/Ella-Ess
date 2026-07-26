@@ -184,9 +184,102 @@ Sprachmodell generiert. Konkret (Stand Meilenstein 3):
   Produktivbetrieb mit externen Autor:innen sollte das förmlicher werden (z.B. ein
   Freigabe-Status-Feld statt `isPublished` als einfachem Boolean).
 
+## Adaptive individuelle Wortwiederholung (Konzept, in Planung)
+
+Auf ausdrücklichen Produktwunsch skizziert (Stand: Planung vor Meilenstein 11,
+Aussprachekorrektur mit Azure AI Speech). **Noch nicht implementiert** — dieser
+Abschnitt hält die Idee und ihre Leitplanken fest, bevor Code entsteht, und wird bei
+Umsetzung durch ein konkretes technisches Kapitel in docs/ARCHITECTURE.md ersetzt/ergänzt.
+
+**Grundidee:** Wird beim Vorlesen ein Wort mit ausreichender Konfidenz als
+`possible_error` erkannt (bestehende Zustände, siehe „Feedbackregeln" oben — keine neue,
+laxere Schwelle), passiert zweierlei:
+
+1. **Sofort-Feedback bleibt wie bisher**: ermutigend, ggf. mit einer sanften Korrektur
+   (richtige Aussprache vorbildhaft anbieten, nicht die falsche wiederholen oder
+   benennen) — folgt denselben Formulierungsregeln wie oben, keine neuen Ausnahmen.
+2. **Langfristig**: das Wort (bzw. das zugrunde liegende Muster, siehe offene Fragen
+   unten) wird in einem individuellen, dem Kind zugeordneten Übungswortschatz vermerkt.
+   Zukünftige Textauswahl bevorzugt Inhalte, die dieses Wort enthalten — auch in
+   **passiv vorgelesenen** Abschnitten (siehe nächster Abschnitt), um wiederholte,
+   beiläufige Exposition ohne Testcharakter zu ermöglichen.
+
+**Zentrale Leitplanke — Vereinbarkeit mit „Content-Freigabeprozess" (oben):** Die
+Textauswahl darf **keine** Laufzeit-Texterzeugung durch ein Sprachmodell werden — das
+bleibt ausgeschlossen. Die Umsetzung muss deshalb eine **Auswahl/Filterung aus
+kuratiertem, vorab freigegebenem Content** sein (z. B. Geschichten/Übungssätze, die ein
+bestimmtes Wort ohnehin enthalten, werden bei der Auswahl priorisiert), nicht eine
+Generierung neuer Sätze um ein Zielwort herum. Das kann bedeuten, dass die Content-Bank
+(`content-drafts/`) künftig gezielt mit häufigen Übungswörtern durchsetzte Texte braucht
+— ein Autoren-/Redaktionsthema, kein Laufzeit-Feature.
+
+**Abgrenzung zur Diagnostik gilt unverändert:** Der individuelle Übungswortschatz ist
+**kein** Fehlerprofil, das dem Kind oder Eltern als Defizitliste gezeigt wird — er ist
+intern für die Content-Auswahl. Falls er später sichtbar gemacht wird (z. B. im
+Eltern-Dashboard), gelten dieselben Regeln wie bei allen Fortschrittsanzeigen: keine
+Prozentzahlen, keine Fehlerzähler, beschreibende statt wertende Formulierung.
+
+**Offene Fragen, vor Implementierung zu klären** (nicht vollständig, Ausgangspunkt für
+Diskussion mit `content-pedagogy`- und `privacy-security`-Agent):
+
+- Granularität: einzelne Wörter oder zugrunde liegende Muster (Laut-Buchstaben-Beziehung,
+  Wortbaustein)? Wortebene ist einfacher umzusetzen, Musterebene generalisiert besser und
+  entspricht eher etablierter Leseförderung — fachliche Prüfung nötig
+  („Später von Fachpersonal zu prüfen" unten).
+- Wie lange bleibt ein Wort im Übungswortschatz, und wann gilt es als „gefestigt" und
+  wird entfernt? Ohne Ausschlusskriterium droht eine dauerhaft wachsende, nie
+  abschließende Liste.
+- Aufbewahrung/Löschung: unterliegt denselben DSGVO-Grundsätzen wie andere
+  Kind-Daten (siehe docs/SECURITY.md) — Datenminimierung, klare Löschfrist, Löschung bei
+  Kontolöschung über bestehende Kaskaden.
+- Wie stark darf Content-Auswahl auf Übungswörter optimieren, ohne dass Geschichten sich
+  repetitiv/erzwungen anfühlen oder das Kind indirekt spürt, „getestet" zu werden?
+
+## Passive Sprachvorbild-Elemente (Konzept, in Planung)
+
+Ebenfalls Stand: Planung, **nicht implementiert**. Ergänzt die adaptive
+Wortwiederholung oben um eine zweite Komponente: Textabschnitte sollen künftig aus einer
+Mischung aus **aktiv vom Kind gelesenen** und **passiv vorgelesenen** (Sprachvorbild-)
+Zeilen bestehen. Erster Vorschlag zur Orientierung: von 6 Zeilen liest das Kind 2 aktiv,
+4 werden als korrektes Sprachvorbild vorgelesen — das genaue Verhältnis ist **bewusst
+noch offen** und braucht vor Festlegung eine fachliche Einschätzung (siehe unten) sowie
+Erprobung, nicht nur eine technische Entscheidung.
+
+**Zweck:** Wiederholte, beiläufige Exposition gegenüber korrekt ausgesprochenen
+Zielwörtern (aus dem individuellen Übungswortschatz, siehe oben), ohne zusätzlichen
+Leseaufwand oder Testdruck — Vorbild statt Prüfung.
+
+**Technische Anknüpfungspunkte (bei Umsetzung zu klären, hier nur benannt):**
+
+- Passive Zeilen brauchen eine Audioquelle mit korrekter Aussprache — entweder
+  aufgezeichnete, kuratierte Sprachaufnahmen (konsistent mit dem Grundsatz „keine
+  Laufzeit-Erzeugung") oder eine Text-to-Speech-Stimme; falls TTS, wäre das ein neuer,
+  von der Spracherkennung getrennter Provider-Typ und bräuchte eine eigene
+  Datenschutz-/Anbieter-Prüfung (`speech-provider`-Agent), auch wenn hier keine
+  Kinderaudiodaten übertragen werden (nur Text → Sprache, keine biometrische
+  Verarbeitung von Kindstimmen).
+- Die aktiv/passiv-Aufteilung müsste im Content-Format markiert werden — voraussichtlich
+  eine Erweiterung der bestehenden Inline-Marker-Syntax (`[[unlock:...]]`, siehe
+  docs/CONTENT_AUTHORING.md) um einen analogen Marker für Zeilenrollen, statt eines
+  neuen, separaten Formats.
+- Wirkung auf die bestehende Wortpositions-Logik (`deriveExpectedWords`,
+  `positionTracker.ts`): passive Zeilen dürfen nicht als vom Kind zu lesende
+  „expected words" gezählt werden — braucht eine bewusste Erweiterung dieser Funktionen,
+  keine Nebenwirkung.
+
+**Fachliche Prüfung nötig** (siehe „Später von Fachpersonal zu prüfen" unten): Verhältnis
+aktiv/passiv, ob Sprachvorbild-Wiederholung in dieser Form tatsächlich zu den
+gewünschten Effekten führt (Leseforschung/Grundschulpädagogik), und ob TTS oder
+menschliche Aufnahmen für ein Sprachvorbild bei Kindern dieser Altersgruppe geeigneter
+sind.
+
 ## Später von Fachpersonal zu prüfen
 
 - Lernprofile, Formulierungen und Fehler-Schwellenwerte — Grundschulpädagogik/Leseforschung.
+- Adaptive individuelle Wortwiederholung und passive Sprachvorbild-Elemente (beide oben
+  als Konzept skizziert, Stand: Planung) — Granularität (Wort vs. Muster),
+  Aktiv/Passiv-Verhältnis, Eignung von TTS vs. menschlicher Aufnahme als Sprachvorbild —
+  Grundschulpädagogik/Leseforschung/Logopädie.
 - Abgrenzung zu LRS/Legasthenie-Diagnostik — LRS-Fachkraft/Schulpsychologie.
 - `SpecialistFeedback`-Workflow und Berufsrecht bei Ferndiagnose/-beratung —
   Logopäde/Ergotherapeut. Konkret zu klären, bevor Meilenstein 9 real genutzt wird:
