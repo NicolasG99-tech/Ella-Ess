@@ -12,7 +12,37 @@ import {
   awardRewardsForCompletedReadingSession,
   type GrantedReward,
 } from '@/lib/gamification/gamificationService';
-import type { MockScenario, RecognizedWord } from '@/lib/providers/speech/types';
+import type { MockScenario, RecognizedWord, EvaluationState } from '@/lib/providers/speech/types';
+import type { ReadingStepUiState } from '@/lib/reading/sessionStateMachine';
+
+// Exportierte Rückgabeformen, damit die Server-Action-Hülle
+// (features/reading/actions.ts) bei einer Rate-Limit-Sperre ein synthetisches
+// Ergebnis in exakt derselben Form zurückgeben kann, ohne diese Funktionen
+// selbst aufzurufen — siehe dortiger Kommentar zu checkChildContentRateLimit.
+export interface SubmitReadingAttemptResult {
+  evaluationState: EvaluationState;
+  uiState: ReadingStepUiState;
+  message: string;
+  retryCount: number;
+  newLocalPosition: number;
+  sectionWordCount: number;
+  sectionComplete: boolean;
+  sessionComplete: boolean;
+  newlyUnlockedIllustrations: UnlockedIllustrationInfo[];
+  newlyEarnedRewards: GrantedReward[];
+}
+
+export interface ResolveHelpResult {
+  uiState: ReadingStepUiState;
+  message: string;
+  retryCount: number;
+  newLocalPosition: number;
+  sectionWordCount: number;
+  sectionComplete: boolean;
+  sessionComplete: boolean;
+  newlyUnlockedIllustrations: UnlockedIllustrationInfo[];
+  newlyEarnedRewards: GrantedReward[];
+}
 
 // Orchestrierungslogik der Lesesitzung, getrennt von der Server-Action-Hülle
 // (`features/reading/actions.ts`), damit sie ohne Next.js-Request-Kontext
@@ -153,7 +183,9 @@ async function advanceSectionIfNeeded(
   };
 }
 
-export async function submitReadingAttempt(input: SubmitReadingAttemptParams) {
+export async function submitReadingAttempt(
+  input: SubmitReadingAttemptParams,
+): Promise<SubmitReadingAttemptResult> {
   const session = await db.readingSession.findFirstOrThrow({
     where: { id: input.sessionId, childProfileId: input.childProfileId },
   });
@@ -261,7 +293,7 @@ export interface ResolveHelpParams {
   localPosition: number;
 }
 
-export async function resolveHelp(input: ResolveHelpParams) {
+export async function resolveHelp(input: ResolveHelpParams): Promise<ResolveHelpResult> {
   const session = await db.readingSession.findFirstOrThrow({
     where: { id: input.sessionId, childProfileId: input.childProfileId },
   });

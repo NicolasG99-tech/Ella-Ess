@@ -44,3 +44,22 @@ export async function checkRateLimit(
   });
   return true;
 }
+
+// Gemeinsames Budget für die eigentliche Inhalts-Nutzung durch ein Kind
+// (Leseversuch einreichen, Hilfe anfordern, Verständnisfrage/Übung
+// abschicken) — bewusst EIN gemeinsames Kontingent über alle diese
+// Aktionstypen hinweg, pro Kinderprofil, nicht pro Aktionstyp einzeln
+// (10/Min reicht für normales Lesetempo bei Weitem, bremst aber
+// automatisiertes/skriptgesteuertes Durchklicken). Gilt ausdrücklich NICHT
+// für Login/Registrierung/Passwort-Reset — die haben eigene, getrennte
+// Limits (siehe checkRateLimit-Aufrufe in features/auth/actions.ts).
+const CHILD_CONTENT_RATE_LIMIT = 10;
+const CHILD_CONTENT_RATE_WINDOW_MS = 60_000;
+
+export function checkChildContentRateLimit(childProfileId: string): Promise<boolean> {
+  return checkRateLimit(
+    `child-content:${childProfileId}`,
+    CHILD_CONTENT_RATE_LIMIT,
+    CHILD_CONTENT_RATE_WINDOW_MS,
+  );
+}

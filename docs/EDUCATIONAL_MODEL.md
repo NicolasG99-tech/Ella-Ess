@@ -273,6 +273,48 @@ gewünschten Effekten führt (Leseforschung/Grundschulpädagogik), und ob TTS od
 menschliche Aufnahmen für ein Sprachvorbild bei Kindern dieser Altersgruppe geeigneter
 sind.
 
+## E-Book-Bibliothek (Konzept, für spätere Entwicklungsschritte notiert)
+
+Von Nicolas skizzierte Ausbau-Idee (Stand 2026-07-28), **nicht implementiert** — dieser
+Abschnitt hält nur die Idee und ihre Leitplanken fest, damit sie bei Bedarf ohne
+Nachfragen aufgegriffen werden kann.
+
+**Grundidee:** Zusätzlich zum bestehenden Angebot (begleitete Lesesitzungen mit
+Spracherkennungs-Feedback und Illustrationsfreischaltung) eine E-Book-Bibliothek, die
+ein Kind ergänzend nutzen kann — an das Kind und seine Interessen kuratierte
+Geschichten (z. B. Themenbereiche wie Tiere, Abenteuer, Fantasie, Sport), nicht nur
+der aktuell kleine, feste Story-Katalog.
+
+**Vereinbarkeit mit „Content-Freigabeprozess" (oben) — gilt unverändert:** „Kuratiert"
+heißt Auswahl/Filterung aus einem vorab redaktionell freigegebenen Bestand (analog zum
+bestehenden `content-drafts/`-Workspace, siehe docs/CONTENT_AUTHORING.md), keine
+Laufzeit-Texterzeugung durch ein Sprachmodell. Eine größere Content-Bank mit
+Themen-/Interessens-Tags wäre die technische Voraussetzung, kein KI-Textgenerator.
+
+**Offene Fragen, vor Implementierung zu klären:**
+
+- Wie werden „Interessen" erfasst — explizite Auswahl durch Eltern/Kind im
+  Kinderprofil (z. B. Themen-Tags) oder implizit aus bisherigem Leseverhalten
+  abgeleitet? Ein Interessen-Feld am `ChildProfile` unterläge denselben
+  DSGVO-Minimierungsgrundsätzen wie der individuelle Übungswortschatz (siehe
+  „Adaptive individuelle Wortwiederholung" oben).
+- Verhältnis zum bestehenden begleiteten Lese-Flow: freier, unbegleiteter Lesemodus
+  (ohne Spracherkennung/Feedback) oder nutzt jedes Bibliotheks-Buch weiterhin dieselbe
+  Vorlese-Auswertung wie die aktuellen Geschichten? Ein freier Modus skaliert
+  content-seitig einfacher (keine pro-Buch-Illustrations-/Checkpoint-Autorenarbeit
+  nötig), verzichtet dafür auf das bestehende Kernfeature dieses Produkts.
+- Content-Beschaffung: eigene Autor:innen vs. lizenzierte/gemeinfreie
+  Kinderbuch-Texte — bei lizenzierten Werken zusätzliche urheberrechtliche Prüfung für
+  eine kommerzielle, kostenpflichtige App (siehe docs/SECURITY.md, „Bezahlsystem
+  (Stripe)").
+- Einordnung ins Preismodell: eigener Tarif-Baustein/Zusatzoption oder Teil der
+  bestehenden Tarife?
+- Dieselben pädagogischen Leitplanken wie im gesamten Produkt (keine Diagnostik, keine
+  Dark-Pattern-Gamification, altersgerechte Inhalte) müssten für jeden neuen Titel
+  gelten, nicht nur für die aktuell eng kuratierte Story-Auswahl — bei deutlich größerem
+  Content-Umfang wird das redaktionelle Vier-Augen-Prinzip (siehe
+  „Content-Freigabeprozess" oben) wichtiger als im aktuellen MVP-Maßstab.
+
 ## Später von Fachpersonal zu prüfen
 
 - Lernprofile, Formulierungen und Fehler-Schwellenwerte — Grundschulpädagogik/Leseforschung.
@@ -293,6 +335,10 @@ sind.
     medizinischen Rat missverstehen, obwohl das Produkt das ausdrücklich ausschließt?
   - Dokumentationspflichten/Aufbewahrungsfristen für `SpecialistFeedback`-Einträge nach
     Berufsrecht der jeweiligen Fachrichtung.
+- E-Book-Bibliothek (oben als Konzept skizziert, Stand: für spätere
+  Entwicklungsschritte notiert) — Alters-/Themenpassung eines deutlich größeren
+  Content-Bestands, Eignung freien (unbegleiteten) Lesens für die Zielgruppe 7–10 —
+  Grundschulpädagogik/Leseforschung.
 - Dieselben Fragen gelten analog für `TeacherFeedback`/`TeacherProfile` — plus zusätzlich:
   schulrechtliche Einordnung eines außerschulischen Fortschritts-Tools (Elternrecht auf
   Information vs. schulische Beurteilungshoheit), und ob der generische Assessment-Bogen

@@ -45,6 +45,40 @@ in `prisma/schema.prisma`.
 
 ## Bereits getroffene Schutzmaßnahmen (Stand Meilenstein 10)
 
+- **Autorisierung: App-eigene Schicht statt Supabase Row Level Security (RLS) —
+  bewusste Entscheidung, siehe Frage in der Sicherheitsprüfung 2026-07-28.** RLS setzt
+  auf Datenbankebene an (SQL-Policies direkt an den Tabellen) und ist die richtige Wahl,
+  wenn der Browser direkt mit Supabase spricht (Supabase-Auth + Client-SDK/PostgREST) —
+  dort gibt es sonst keine andere Instanz, die eine Anfrage vor der Datenbank abfängt.
+  In dieser App ist das nicht der Fall: Der Browser hat **nie** direkten DB-Zugriff,
+  jede Anfrage läuft ausschließlich über Next.js Server Actions/Route Handler, die
+  zuerst `requireUser()`/`requireRole()`/`requireOwnChildProfile()` (siehe
+  `src/lib/server/authz.ts`) durchlaufen — der Eigentümerschafts-Filter (z. B.
+  `parentId: user.id`) steckt direkt in der Prisma-Query. Zusätzliche RLS-Policies
+  würden dieselbe Logik ein zweites Mal, in SQL statt TypeScript, pflegen — mit
+  echtem Risiko, dass beide Fassungen mit der Zeit auseinanderlaufen, und schwerer
+  durch dieselben Integrationstests abzudecken wie der bestehende
+  `authz.ts`-Weg (siehe `tests/integration/*-ownership.test.ts`). Fairer Gegenpunkt für
+  RLS: Sie schützt zusätzlich vor dem Fall, dass eine künftige Server Action versehentlich
+  `requireOwnChildProfile()` vergisst — ein reines Entwicklerfehler-Risiko, das mit
+  wachsendem Team wieder relevanter werden kann und bei Bedarf neu bewertet werden
+  sollte. Supabase wird entsprechend ausschließlich als PostgreSQL-Hosting genutzt,
+  nicht als Auth-/RLS-Schicht (siehe auch ARCHITECTURE.md).
+  **Präzisierung vom 2026-07-28** (Supabase-Sicherheitswarnungen
+  `rls_disabled_in_public`/`sensitive_columns_exposed`): "keine RLS" bezog sich auf
+  fehlende Autorisierungs-*Policies* in SQL — nicht darauf, dass RLS als Schalter
+  komplett aus bleiben sollte. Ohne RLS ist nämlich zusätzlich Supabases automatisch
+  generierte PostgREST-API (`<project-url>/rest/v1/<Tabelle>`) für **jede** Tabelle
+  öffentlich erreichbar, obwohl diese App sie nie nutzt — ein ungenutzter, aber
+  trotzdem offener Zugriffsweg, über den z.B. `User.passwordHash` ohne jede
+  Prüfung lesbar gewesen wäre. Fix (Migration
+  `20260728120000_enable_row_level_security`): RLS auf allen Tabellen aktiviert,
+  weiterhin bewusst **ohne** eigene Policies. Das ist kein Widerspruch zur obigen
+  Begründung: Ohne `FORCE ROW LEVEL SECURITY` bleibt der Tabellenbesitzer (die Rolle,
+  über die Prisma verbindet) von RLS unberührt — die App funktioniert unverändert,
+  die Autorisierungslogik bleibt vollständig und einzig in `authz.ts`. RLS dient hier
+  ausschließlich als Default-Deny-Schalter gegen die ungenutzte PostgREST-API, nicht
+  als zweite Autorisierungsebene für die eigentliche App-Logik.
 - TypeScript strict Mode, keine unbegründeten `any`.
 - Passwort-Hashing mit Argon2id (`@node-rs/argon2`, OWASP-Parameter: 19 MiB Speicher,
   2 Iterationen), nie im Klartext gespeichert oder geloggt.
@@ -72,11 +106,31 @@ in `prisma/schema.prisma`.
   UX-Inkonsistenz und ein Beleg dafür, den Build-Log auf die „ƒ Proxy“-Zeile zu prüfen,
   statt nur den HTTP-Statuscode zu testen.
 - Session-Strategie: JWT (von Auth.js für Credentials-Provider vorgeschrieben),
-  30 Tage Gültigkeit, signiert mit `AUTH_SECRET`.
+  signiert mit `AUTH_SECRET`. **Sitzungs-Timeout (Ergebnis der Sicherheitsprüfung
+  2026-07-28, Punkt 5)**: gleitendes Idle-Timeout von standardmäßig 20 Minuten
+  (`SESSION_TIMEOUT_MINUTES`, siehe `.env.example`, `src/lib/server/auth.ts`) statt
+  der vorherigen festen 30 Tage — ersetzt durch kurze `maxAge` + kurzes `updateAge`
+  (ein Zehntel der `maxAge`, mind. 60s), sodass NextAuth das Session-Cookie bei
+  fortlaufender Nutzung automatisch verlängert, es aber nach
+  `SESSION_TIMEOUT_MINUTES` Minuten Inaktivität abläuft. 45 Minuten für eine mögliche
+  künftige Schulkonfiguration vorgesehen (siehe „Produktionsanforderungen" unten) —
+  aktuell ohne eigenes Schul-/Organisationsdatenmodell nur manuell per Env-Variable
+  umsetzbar, keine automatische Umschaltung nach Kontoart.
 - Logout läuft bewusst über den next-auth/react-Client (nicht als Server Action),
   um die oben beschriebene Race Condition beim Cookie-Löschen zu vermeiden.
 - Rate Limiting (In-Memory, siehe `src/lib/server/rate-limit.ts`) für Login,
   Registrierung und Passwort-Reset-Anfragen.
+- **E-Mail-Benachrichtigungssystem (Ergebnis der Sicherheitsprüfung 2026-07-28,
+  Punkte 7+8)**: `src/lib/server/email.ts` ist als generisches Template-System
+  aufgebaut (gemeinsamer HTML-/Text-Rahmen + eine `build*Template`-Funktion pro
+  Anlass) statt eines einzelnen Spezialfalls für Passwort-Reset. Bereits aktiv:
+  Login-Benachrichtigung bei jeder tatsächlichen Anmeldung (`events.signIn`-Hook in
+  `src/lib/server/auth.ts` — feuert nur bei echten Login-Vorgängen, nicht bei
+  Session-Aktualisierungen, daher kein Spam) und Datenschutz-Bestätigung bei
+  Kontolöschung (`deleteOwnAccountAction`). Als Vorlage vorbereitet, aber noch ohne
+  Aufrufer: generischer Auth-Code-Versand (künftige E-Mail-Verifizierung/2FA) und
+  Zahlungsmodus-Änderung (wartet auf das künftige Bezahlsystem, siehe
+  „Produktionsanforderungen").
 - Passwort-Reset ohne User-Enumeration: identische Antwort unabhängig davon, ob die
   E-Mail-Adresse registriert ist; Token laufen nach 30 Minuten ab und werden nach
   Nutzung sofort gelöscht.
@@ -271,10 +325,83 @@ einer echten Umgebung mit echten Kindern zwingend zu klären/umzusetzen:
   nicht per `npm audit fix --force` „gelöst"; vor Produktion erneut prüfen, ob
   aktualisierte, nicht-breaking Patches verfügbar sind.
 
+## Cookie-Einwilligung (§ 25 TDDDG)
+
+Ergebnis der Sicherheitsprüfung 2026-07-28, Punkt 10. `src/lib/consent/cookieConsent.ts`
+(reine Logik, SSR-sicher) + `src/features/consent/CookieConsentBanner.tsx`
+(Client-Komponente, global im Root-Layout gemountet, `src/app/layout.tsx`) fragen beim
+ersten Besuch granular vier Kategorien ab: Notwendig (immer aktiv, nicht abwählbar),
+Funktional, Statistik/Analyse, Marketing/externe Medien. Entscheidung wird in
+`localStorage` gespeichert (`hasConsent(category)` zum Auslesen), jederzeit über den
+dauerhaft eingeblendeten „Cookie-Einstellungen"-Button widerrufbar/änderbar.
+
+**Wichtig — Stand heute**: Die App setzt aktuell **keine** nicht-notwendigen Cookies
+(kein Analytics-Tool, kein Tracking-Pixel, keine eingebetteten Drittanbieter-Medien,
+keine Werbung). Das Banner wurde trotzdem bereits jetzt vollständig aufgebaut statt erst
+bei Einführung eines solchen Features — "privacy by default" (ohne Entscheidung gilt
+nichts außer "necessary" als erlaubt) und ein bereits fertiges Fundament, das ein
+künftiges Feature nur noch per `hasConsent('analytics')` (o. Ä.) abfragen muss. **Jeder
+künftige Code, der ein nicht-notwendiges Skript lädt oder ein nicht-notwendiges Cookie
+setzt, MUSS vorher `hasConsent()` prüfen** — sonst wird diese Konformität faktisch
+wieder gebrochen, auch wenn das Banner selbst weiter angezeigt wird.
+
+## Rechtlicher Rahmen für ein künftiges Bezahlsystem (unverbindliche Orientierung)
+
+**Keine Rechtsberatung** — dient nur als grobe Richtung für die Planung, bis zur
+Umsetzung eines echten Bezahlsystems zwingend durch Jurist:innen zu prüfen (siehe
+„Produktionsanforderungen" unten). Ergebnis der Recherche zur Sicherheitsprüfung
+2026-07-28, Punkt 9. Stand: Juli 2026, deutsches Recht.
+
+- **Button-Lösung (§ 312j BGB)**: Ein Bestellbutton, der eine Zahlungspflicht auslöst,
+  muss eindeutig mit „zahlungspflichtig bestellen" oder einer vergleichbar klaren
+  Formulierung beschriftet sein. Bei einer kostenlosen Testphase, die automatisch in
+  ein kostenpflichtiges Abo übergeht, reicht eine Beschriftung wie „Jetzt kostenlos
+  testen" für den ursprünglichen Button — sobald aber der Übergang zur
+  Zahlungspflicht ansteht, muss dieser Schritt erneut denselben Anforderungen
+  genügen. Ein Verstoß führt dazu, dass gar kein wirksamer Vertrag zustande kommt.
+- **Kündigungsbutton (§ 312k BGB, seit 1.7.2022 Pflicht)**: Für online
+  abschließbare, entgeltliche Dauerschuldverhältnisse (ein Abo fällt darunter) muss
+  eine ständig verfügbare, leicht zugängliche Kündigungsfunktion mit dem Wortlaut
+  „Verträge hier kündigen" (oder einer entsprechend eindeutigen Formulierung)
+  bereitgestellt werden, erreichbar ohne vorherigen Login. Fehlt der Button, können
+  Verbraucher:innen jederzeit fristlos kündigen — zusätzlich drohen wettbewerbsrechtliche
+  Abmahnungen.
+- **Widerrufsrecht bei digitalen Inhalten/Abos (§ 356 BGB)**: Grundsätzlich 14 Tage
+  Widerrufsfrist ab Vertragsschluss bei Fernabsatzverträgen. Bei einem Abo mit
+  kostenloser Testphase besteht das Widerrufsrecht in der Regel nur einmal (für den
+  Gesamtvertrag, nicht erneut bei jeder Verlängerung). Das Widerrufsrecht kann bei
+  sofort nutzbaren digitalen Inhalten vorzeitig erlöschen, aber NUR nach
+  ordnungsgemäßer vorheriger Widerrufsbelehrung und ausdrücklicher Zustimmung der
+  Nutzer:in zur sofortigen Ausführung — ohne diese explizite Belehrung/Zustimmung
+  bleibt das Widerrufsrecht bestehen.
+- **Taschengeldparagraph (§ 110 BGB) — hier voraussichtlich NICHT einschlägig**: Er
+  deckt nur vollständig mit eigenen Mitteln bar erfüllte Käufe ab, nicht wiederkehrende
+  Zahlungsverpflichtungen (Abos). Ein Kind kann demnach kein wirksames Abo
+  abschließen — in diesem Produkt ohnehin unstrittig, da ausschließlich Eltern
+  (Erwachsene) den Account/die Zahlung verantworten, Kinder nutzen nur ihr
+  zugewiesenes Profil.
+- **DSGVO Art. 8 (Einwilligung bei Kindern)**: Für „Dienste der
+  Informationsgesellschaft" ist die Einwilligung eines Kindes unter 16 Jahren
+  (Deutschland hat die Altersgrenze bei 16 belassen, nicht auf das EU-Minimum von 13
+  abgesenkt) nur mit Zustimmung der Erziehungsberechtigten wirksam — passt zum
+  bereits bestehenden Modell (Eltern registrieren sich, legen Kinderprofile an,
+  Consent-Log). Bei Einführung von Zahlungen/Zahlungsdaten diese Zuordnung
+  (Vertragspartner = Elternteil, nicht das Kind) explizit in AGB/Datenschutzerklärung
+  festhalten.
+- **Bereits vorhandene Baustelle**: `src/app/nutzungsbedingungen/page.tsx` ist laut
+  eigenem Text ein „Platzhaltertext für den MVP, kein rechtlich geprüfter Text" und
+  deckt bisher nur nicht-diagnostische/elterliche Verantwortungs-Hinweise ab, keine
+  Zahlungs-/Widerrufs-/Kündigungsregelungen — muss vor Einführung eines Bezahlsystems
+  vollständig überarbeitet werden.
+
 ## Produktionsanforderungen (vor echtem Launch)
 
 - Professionelle Prüfung: Datenschutzrecht, Einwilligung für Kinderdaten (DSGVO Art. 8),
   Nutzungsbedingungen (**Jurist**).
+- Vor Einführung eines Bezahlsystems: vollständige AGB inkl. Widerrufsbelehrung,
+  Kündigungsbutton (§ 312k BGB) und zahlungspflicht-konforme Bestellbuttons (§ 312j
+  BGB) durch Jurist:in erstellen/prüfen lassen — siehe Abschnitt „Rechtlicher Rahmen
+  für ein künftiges Bezahlsystem" oben für eine erste, unverbindliche Orientierung.
 - Echter Verifizierungsprozess für Fachkräfte- und Lehrkräfte-Konten (z.B. Nachweis der
   Berufszulassung/-registrierung bzw. Schulzugehörigkeit) statt des aktuellen
   Admin-Demo-Klicks — siehe docs/EDUCATIONAL_MODEL.md, Abschnitt „Später von Fachpersonal
@@ -310,3 +437,70 @@ einer echten Umgebung mit echten Kindern zwingend zu klären/umzusetzen:
 - Falls `SPEECH_PROVIDER=azure` produktiv genutzt werden soll: siehe Abschnitt
   „Optionaler echter Spracherkennungs-Provider (Azure)" oben — AVV, EU-Datenzone,
   rechtliche Einordnung als biometrisches Datum, aktualisierte Einwilligung.
+- Sitzungs-Timeout, Schulkonfiguration (45 statt 20 Min): sobald ein echtes
+  Schul-/Organisationskonzept existiert (eigenes Datenmodell für Schulen/Klassen,
+  siehe docs/EDUCATIONAL_MODEL.md), `SESSION_TIMEOUT_MINUTES` automatisch anhand der
+  Kontoart setzen statt der aktuellen, global per Umgebungsvariable konfigurierten
+  Lösung.
+- ~~Billing-Notifications~~ — **teilweise erledigt**: Seit der Einführung des
+  Bezahlsystems (2026-07-28, siehe Abschnitt „Bezahlsystem (Stripe)" unten) löst der
+  Stripe-Webhook-Handler bei jeder Statusänderung eine E-Mail über
+  `sendPaymentMethodChangedEmail()` aus (Tarifwechsel, fehlgeschlagene Zahlung,
+  Kündigung). Noch offen: eine gesonderte, im Voraus versendete Erinnerung vor der
+  nächsten automatischen Verlängerung (aktuell nur reaktiv bei bereits eingetretenen
+  Ereignissen) — dafür bräuchte es einen geplanten Job statt eines reinen
+  Webhook-Reflexes.
+- Vor Produktivschaltung des Bezahlsystems: echtes Stripe-Konto (nicht Test-Modus),
+  Produkte/Preise im Dashboard anlegen, Stripe Tax aktivieren oder alternative
+  USt-Abwicklung klären, Webhook-Endpunkt auf die echte Domain zeigen lassen (siehe
+  .env.example).
+
+## Bezahlsystem (Stripe)
+
+Ergebnis der Produktentscheidung "Jetzt Zahlungsmodell" (2026-07-28, im Anschluss an
+Punkt 6 der Sicherheitsprüfung vom selben Tag). Stripe als Zahlungsanbieter,
+gestaffelte Tarife (Basic/Familie/Schule, siehe `src/lib/billing/plans.ts`), vorerst
+ohne kostenlose Testphase.
+
+- **Architektur**: `Subscription`-Modell (1:1 zu `User`, siehe `prisma/schema.prisma`)
+  wird AUSSCHLIESSLICH vom Stripe-Webhook-Handler
+  (`src/app/api/webhooks/stripe/route.ts`) geschrieben
+  (`syncSubscriptionFromStripe()`/`deleteLocalSubscription()` in
+  `src/lib/billing/subscriptionService.ts`) — nie direkt aus einer Server Action.
+  Grund: Der einzige verlässliche Zeitpunkt, zu dem der tatsächliche
+  Abrechnungsstatus feststeht, ist ein von Stripe zugestelltes, signiert geprüftes
+  Event, nicht die Rückkehr von einer Checkout-Weiterleitung (die kann der Nutzer
+  abbrechen, oder das Event trifft verzögert ein).
+- **Kündigungsbutton (§ 312k BGB)**: `/dashboard/abo` zeigt einen dauerhaft
+  sichtbaren „Verträge hier kündigen"-Button (`CancelSubscriptionButton.tsx`,
+  Wortlaut wörtlich aus dem Gesetzestext übernommen), der ohne erneute
+  Zugangsdaten-Eingabe zum Stripe-Kundenportal führt — dort erfolgt die eigentliche
+  Kündigung.
+- **Buttonlösung (§ 312j BGB)**: Der rechtlich bindende Bestell-Klick findet auf der
+  von Stripe gehosteten Checkout-Seite statt (Stripes eigener Bezahlen-Button ist
+  bereits konform beschriftet). Der eigene Auslöse-Button auf `/preise`
+  (`CheckoutButton.tsx`) ist zusätzlich klar als "kostenpflichtig" beschriftet, auch
+  wenn das rechtlich nicht zwingend an dieser Stelle nötig wäre — Transparenz soll
+  nicht erst auf der zweiten Seite beginnen.
+- **Kein Zugriff auf Zahlungsdaten**: Kreditkarten-/SEPA-Daten werden ausschließlich
+  von Stripe erfasst und verarbeitet (gehostete Checkout-/Portal-Seiten) — die App
+  selbst sieht und speichert niemals Zahlungsdetails, nur Stripes Kunden-/
+  Subscription-IDs und den Abrechnungsstatus.
+- **Feature-Gating NOCH NICHT scharf geschaltet**: `requireActiveSubscription()`
+  (`src/lib/server/authz.ts`) steht als Baustein bereit, wird aber aktuell von
+  keiner Server Action aufgerufen — welche Funktionen tatsächlich hinter ein Abo
+  wandern, ist eine noch zu treffende Produktentscheidung (u.a. Umgang mit
+  Bestandskonten/Demo-Zugang). Ebenso ist `maxChildProfiles` pro Tarif (siehe
+  `plans.ts`) aktuell nur dokumentiert, nicht bei `createChildProfileAction()`
+  durchgesetzt (dort gilt weiterhin nur der plan-unabhängige, feste Deckel
+  `MAX_CHILD_PROFILES_PER_PARENT`).
+- **"school"-Tarif ist Vorbereitung, kein vollständiges Schulprodukt**: Es gibt noch
+  kein eigenes Schul-/Organisationsdatenmodell (Kinderprofile hängen weiterhin an
+  genau einem Elternkonto) — siehe `plans.ts` für die ausführliche Begründung und den
+  bereits an anderer Stelle dokumentierten Zusammenhang mit dem geplanten
+  45-Minuten-Sitzungs-Timeout für Schulen.
+- **Nicht Bestandteil dieser Umsetzung** (aus dem Sandbox-Environment heraus nicht
+  möglich, siehe README/CHANGELOG): Anlegen eines echten Stripe-Kontos, der drei
+  Produkte/Preise im Stripe-Dashboard, Ausführen der Datenbank-Migration sowie
+  `npm install` zum Nachziehen des `stripe`-Pakets — siehe .env.example für die
+  genauen manuellen Schritte.

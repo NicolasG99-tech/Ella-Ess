@@ -39,6 +39,7 @@ interface AnswerFeedback {
   canRetry: boolean;
   hintText: string | null;
   correctAnswer: unknown;
+  rateLimited?: boolean;
 }
 
 export function ComprehensionQuiz({
@@ -220,7 +221,18 @@ export function ComprehensionQuiz({
             feedback.isCorrect ? 'bg-green-50 text-green-900' : 'bg-amber-50 text-amber-900'
           }`}
         >
-          {feedback.isCorrect ? (
+          {feedback.rateLimited ? (
+            <div className="flex flex-col gap-2">
+              <p>Kurze Pause — das war schnell hintereinander! Versuch es gleich noch einmal.</p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="self-start rounded-md border border-amber-400 bg-white px-3 py-1.5 font-medium text-amber-800"
+              >
+                Nochmal versuchen
+              </button>
+            </div>
+          ) : feedback.isCorrect ? (
             <p>Super gemacht! Das war richtig.</p>
           ) : feedback.canRetry ? (
             <div className="flex flex-col gap-2">

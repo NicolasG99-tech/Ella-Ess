@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/server/auth';
 import { db } from '@/lib/server/db';
+import { hasActiveSubscription } from '@/lib/billing/subscriptionService';
 import type { UserRole } from '@/generated/prisma/enums';
 
 // Wird von Server Actions geworfen, wenn Authentifizierung/Autorisierung fehlschlägt.
@@ -61,6 +62,24 @@ export async function requireRole(role: UserRole | UserRole[]): Promise<Authenti
   const allowed = Array.isArray(role) ? role : [role];
   if (!allowed.includes(user.role)) {
     throw new AuthzError('Diese Aktion ist für deine Rolle nicht verfügbar.');
+  }
+  return user;
+}
+
+// Optionaler Baustein für kostenpflichtige Funktionen (Ergebnis der
+// Produktentscheidung "Jetzt Zahlungsmodell", 2026-07-28). BEWUSST NOCH
+// NIRGENDS AUFGERUFEN — welche Funktionen tatsächlich hinter ein Abo
+// wandern (alles? nur neue Inhalte? Bestandskund:innen-Übergang?) ist eine
+// Produktentscheidung, die noch nicht getroffen wurde. Diese Funktion steht
+// bereit, damit eine künftige Server Action nur noch
+// `await requireActiveSubscription()` direkt nach `requireUser()` ergänzen
+// muss, statt die Prüfung neu zu entwerfen. Absichtlich NACH requireUser()
+// aufzurufen (nie davor) — ein nicht angemeldeter Zugriff soll weiterhin als
+// Authentifizierungsfehler erscheinen, nicht als Abo-Fehler.
+export async function requireActiveSubscription(): Promise<AuthenticatedUser> {
+  const user = await requireUser();
+  if (!(await hasActiveSubscription(user.id))) {
+    throw new AuthzError('Diese Funktion erfordert ein aktives Abo.');
   }
   return user;
 }

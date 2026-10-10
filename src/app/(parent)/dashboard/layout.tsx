@@ -14,6 +14,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-6 py-4">
         <span className="font-semibold text-stone-900">Lese-Abenteuer — Elternbereich</span>
         <div className="flex items-center gap-4">
+          <Link href="/dashboard/abo" className="text-sm text-stone-600 underline">
+            Mein Abo
+          </Link>
           <Link href="/dashboard/konto" className="text-sm text-stone-600 underline">
             Mein Konto
           </Link>

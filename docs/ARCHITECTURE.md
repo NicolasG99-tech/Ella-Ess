@@ -468,6 +468,34 @@ Geschichten stehen gleichberechtigt nebeneinander, ohne dass der Import bestehen
 handgeschriebenen Content überschreibt. Volles Format und die Marker-Syntax für
 wortpositions-basierte Illustrationsfreischaltung: siehe docs/CONTENT_AUTHORING.md.
 
+## Bezahlsystem (Stripe)
+
+Seit 2026-07-28 (Produktentscheidung "Jetzt Zahlungsmodell"). Vollständige Details,
+inkl. rechtlichem Rahmen und offener Punkte, siehe docs/SECURITY.md, Abschnitt
+„Bezahlsystem (Stripe)". Kurzüberblick des Datenflusses:
+
+1. `/preise` zeigt den Tarif-Katalog (`src/lib/billing/plans.ts`, drei feste Tarife,
+   kein dynamisches Pricing).
+2. `createCheckoutSessionAction()` (`src/features/billing/actions.ts`) legt bei
+   Bedarf einen Stripe-Kunden an (`getOrCreateStripeCustomerId()`, ID wird auf
+   `User.stripeCustomerId` gecacht, um bei abgebrochenen Checkouts keine
+   Kunden-Dubletten in Stripe anzulegen) und leitet zur von Stripe gehosteten
+   Checkout-Seite weiter.
+3. Stripe stellt nach erfolgreichem Checkout bzw. jeder späteren Statusänderung
+   (Verlängerung, Kündigung, fehlgeschlagene Zahlung) ein signiertes Webhook-Event an
+   `/api/webhooks/stripe` zu. Der Handler verifiziert die Signatur und ruft
+   `syncSubscriptionFromStripe()` auf — das ist die EINZIGE Stelle, die die lokale
+   `Subscription`-Tabelle schreibt (siehe Begründung im Code-Kommentar dort).
+4. `/dashboard/abo` liest den lokalen `Subscription`-Datensatz rein lesend und bietet
+   den Kündigungsbutton (`createBillingPortalSessionAction()` → Stripe-Kundenportal,
+   erfüllt § 312k BGB).
+
+`requireActiveSubscription()` (`src/lib/server/authz.ts`) ist als Feature-Gating-
+Baustein vorbereitet, aber bewusst an keiner bestehenden Server Action angebunden —
+welche Funktionen tatsächlich ein Abo voraussetzen, ist eine noch offene
+Produktentscheidung. Ebenso ist der `maxChildProfiles`-Wert pro Tarif aktuell nur im
+Katalog dokumentiert, nicht in `createChildProfileAction()` durchgesetzt.
+
 ## Speicherstrategie
 
 - PostgreSQL via Prisma (Driver-Adapter `@prisma/adapter-pg`, seit Prisma 7

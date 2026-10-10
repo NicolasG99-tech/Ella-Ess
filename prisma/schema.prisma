@@ -31,12 +31,21 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Stripe-Kunden-ID, sobald der erste Checkout gestartet wurde — bewusst
+  // direkt auf User statt nur auf Subscription, da der Stripe-Kunde bereits
+  // VOR einer abgeschlossenen/aktiven Subscription existieren kann (z.B.
+  // abgebrochener Checkout) und wir denselben Kunden bei einem erneuten
+  // Versuch wiederverwenden wollen, statt Dubletten in Stripe anzulegen.
+  // Siehe src/lib/billing/subscriptionService.ts, getOrCreateStripeCustomerId().
+  stripeCustomerId String? @unique
+
   accounts                Account[]
   sessions                Session[]
   childProfiles           ChildProfile[]
   consentRecords          ConsentRecord[]
   specialistProfile       SpecialistProfile?
   teacherProfile          TeacherProfile?
+  subscription            Subscription?
   accessGrantsMade        ChildAccessGrant[]   @relation("GrantedByParent")
   teacherAccessGrantsMade TeacherAccessGrant[] @relation("TeacherGrantedByParent")
   auditEvents             AuditEvent[]         @relation("AuditActor")
@@ -634,6 +643,61 @@ model AuditEvent {
 
   @@index([actorUserId])
   @@index([targetType, targetId])
+}
+
+// ---------------------------------------------------------------------------
+// Bezahlsystem (Stripe) — Ergebnis der Sicherheitsprüfung 2026-07-28, Punkt 6,
+// und der Produktentscheidung "Jetzt Zahlungsmodell" (2026-07-28): Stripe als
+// Zahlungsanbieter, gestaffelte Tarife (Basic/Familie/Schule), vorerst ohne
+// kostenlose Testphase. Siehe src/lib/billing/plans.ts für den Tarif-Katalog,
+// docs/SECURITY.md für den rechtlichen Rahmen (Buttonlösung, Kündigungsbutton,
+// Widerrufsrecht).
+// ---------------------------------------------------------------------------
+
+enum PlanTier {
+  basic
+  family
+  school
+}
+
+// Übernimmt bewusst Stripes eigene Subscription-Status-Namen 1:1 (statt einer
+// eigenen, vereinfachten Übersetzung) — vermeidet eine fehleranfällige
+// Mapping-Tabelle im Webhook-Handler und macht Stripe-Dashboard und eigene
+// DB direkt vergleichbar. Siehe
+// https://docs.stripe.com/api/subscriptions/object#subscription_object-status
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  incomplete
+  incomplete_expired
+  unpaid
+  paused
+}
+
+// Ein Elternkonto hat höchstens eine Subscription (Upgrade/Downgrade
+// aktualisiert dieselbe Zeile statt eine neue anzulegen, siehe
+// stripeSubscriptionId-Wechsel im Webhook-Handler) — passt zum aktuellen
+// Preismodell "ein Tarif pro Familie/Konto", nicht pro Kinderprofil.
+model Subscription {
+  id                   String              @id @default(cuid())
+  userId               String              @unique
+  planTier             PlanTier
+  status               SubscriptionStatus
+  stripeSubscriptionId String              @unique
+  stripePriceId        String
+  // Ende der aktuell bezahlten Periode — bestimmt u.a., bis wann der Zugang
+  // bei einer zum Periodenende geplanten Kündigung (cancelAtPeriodEnd) noch
+  // besteht.
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }
 
 // ---------------------------------------------------------------------------

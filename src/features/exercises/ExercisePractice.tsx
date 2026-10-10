@@ -25,6 +25,7 @@ interface SpellingFeedback {
   isCorrect: boolean;
   canRetry: boolean;
   solution: string | null;
+  rateLimited?: boolean;
 }
 
 function speak(text: string) {
@@ -35,12 +36,27 @@ function speak(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
+// Kurzer, nicht wertender Hinweis bei Rate-Limit-Sperre (10 Aktionen/Min pro
+// Kinderprofil, siehe checkChildContentRateLimit in lib/server/rate-limit.ts)
+// — als eigene Komponente AUSSERHALB von ExercisePractice deklariert (nicht
+// inline im Render), sonst verliert sie bei jedem Re-Render ihren Zustand
+// (react-hooks/static-components-Lint-Regel) und wird bei jedem Tastenanschlag
+// im Eingabefeld neu erzeugt.
+function RateLimitHint() {
+  return (
+    <p role="status" className="rounded-md bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
+      Kurze Pause — das war schnell hintereinander! Versuch es gleich noch einmal.
+    </p>
+  );
+}
+
 export function ExercisePractice({ childProfileId, exercise, backHref }: ExercisePracticeProps) {
   const [index, setIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [feedback, setFeedback] = useState<SpellingFeedback | null>(null);
   const [wordRead, setWordRead] = useState(false);
   const [newRewards, setNewRewards] = useState<RewardBadgeData[]>([]);
+  const [rateLimitNotice, setRateLimitNotice] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const item = exercise.items[index];
@@ -68,6 +84,7 @@ export function ExercisePractice({ childProfileId, exercise, backHref }: Exercis
     setFeedback(null);
     setWordRead(false);
     setNewRewards([]);
+    setRateLimitNotice(false);
   }
 
   function handleWordReadDone() {
@@ -77,6 +94,15 @@ export function ExercisePractice({ childProfileId, exercise, backHref }: Exercis
         childProfileId,
         exerciseItemId: item.id,
       });
+      // Bei Rate-Limit-Sperre wurde die Übung serverseitig NICHT als
+      // abgeschlossen gespeichert — daher den optimistischen `wordRead`-Status
+      // wieder zurücksetzen, statt fälschlich "geschafft" anzuzeigen.
+      if (result.rateLimited) {
+        setWordRead(false);
+        setRateLimitNotice(true);
+        return;
+      }
+      setRateLimitNotice(false);
       setNewRewards(result.newlyEarnedRewards);
     });
   }
@@ -118,6 +144,7 @@ export function ExercisePractice({ childProfileId, exercise, backHref }: Exercis
       {isWordReading ? (
         <div className="flex flex-col items-center gap-6 rounded-xl border border-stone-200 bg-white p-10">
           <p className="text-4xl font-bold text-stone-900">{item.prompt}</p>
+          {rateLimitNotice && <RateLimitHint />}
           {!wordRead ? (
             <button
               type="button"
@@ -190,7 +217,9 @@ export function ExercisePractice({ childProfileId, exercise, backHref }: Exercis
                 feedback.isCorrect ? 'bg-green-50 text-green-900' : 'bg-amber-50 text-amber-900'
               }`}
             >
-              {feedback.isCorrect ? (
+              {feedback.rateLimited ? (
+                <p>Kurze Pause — das war schnell hintereinander! Versuch es gleich noch einmal.</p>
+              ) : feedback.isCorrect ? (
                 <p>Super gemacht!</p>
               ) : feedback.canRetry ? (
                 <p>Fast! Versuch es noch einmal.</p>

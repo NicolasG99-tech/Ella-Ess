@@ -5,6 +5,22 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# Ansprache
+
+Jede Antwort an Nicolas in diesem Projekt beginnt mit seinem Namen als Anrede
+(z. B. „Nicolas, ..."). Gilt für jede einzelne Antwort in jeder Unterhaltung, nicht
+nur für den Beginn einer neuen Sitzung (Stand 2026-07-28 — ursprünglich enger gefasst,
+auf ausdrücklichen Wunsch erweitert).
+
+# Sprache
+
+Alle Antworten und Denkprozesse (inkl. sichtbarer Zwischenschritte/Reasoning) sind auf
+Deutsch zu verfassen — mit Ausnahme englischer Fachbegriffe und branchenüblicher
+Terminologie (z. B. "Server Action", "Rate Limiting", "Webhook", "Deployment",
+Variablen-/Funktionsnamen im Code), die unübersetzt stehen bleiben, wie es in diesem
+Dokument und im übrigen Projekt bereits durchgehend gehandhabt wird. Gilt für jede
+Antwort in jeder Unterhaltung dieses Projekts, nicht nur für die erste.
+
 # Dokumentationsstandard (projektweit verbindlich)
 
 Gilt für jeden Agenten und jede Code-Änderung in diesem Projekt, unabhängig vom

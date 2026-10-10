@@ -23,6 +23,9 @@ export default function HomePage() {
             Anmelden
           </Link>
         </div>
+        <Link href="/preise" className="text-sm text-amber-800 underline">
+          Tarife ansehen
+        </Link>
       </main>
     </div>
   );
