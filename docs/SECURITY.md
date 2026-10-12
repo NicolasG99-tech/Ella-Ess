@@ -407,8 +407,8 @@ Umsetzung eines echten Bezahlsystems zwingend durch Jurist:innen zu prüfen (sie
   GmbH erfordert neues Impressum (Firma, Geschäftsführung, HRB, USt-ID). Achtung
   Preisangaben: Als Kleinunternehmer (§ 19 UStG) darf keine MwSt. ausgewiesen werden
   — „inkl. MwSt.“ auf `/preise` gilt erst für den Betrieb über die GmbH. Eigene
-  App-Domain + Kontaktadresse ist beschlossen (2026-10-12); bis dahin steht im
-  Impressum übergangsweise musik@nicolazz.com.
+  App-Domain ist ella-ess.de (beschlossen 2026-10-12); das Impressum nennt bereits
+  kontakt@ella-ess.de — Domain und Postfach müssen vor Live-Schaltung existieren.
 - Echter Verifizierungsprozess für Fachkräfte- und Lehrkräfte-Konten (z.B. Nachweis der
   Berufszulassung/-registrierung bzw. Schulzugehörigkeit) statt des aktuellen
   Admin-Demo-Klicks — siehe docs/EDUCATIONAL_MODEL.md, Abschnitt „Später von Fachpersonal

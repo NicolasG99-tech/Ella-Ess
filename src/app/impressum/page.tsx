@@ -7,15 +7,16 @@ export const metadata: Metadata = { title: 'Impressum — Lese-Abenteuer' };
 // Künstlername). Übergangslösung: Die App soll später über eine GmbH laufen —
 // dann hier Firma, Vertretungsberechtigte, Registereintrag und USt-ID ergänzen.
 // Keine USt-ID-Angabe, solange Kleinunternehmer (§ 19 UStG) ohne USt-ID.
-// E-Mail ist ebenfalls eine Übergangslösung: Entscheidung 2026-10-12, die App
-// bekommt eine eigene Domain + Kontaktadresse — sobald vorhanden, hier ersetzen
-// (und EMAIL_FROM_ADDRESS in .env passend setzen).
+// E-Mail: eigene App-Domain ella-ess.de (Entscheidung 2026-10-12). Vor
+// Live-Schaltung sicherstellen, dass Domain registriert und das Postfach
+// erreichbar ist — eine nicht zustellbare Impressums-Adresse erfüllt § 5 DDG
+// ("schnelle elektronische Kontaktaufnahme") nicht.
 const PROVIDER = {
   name: 'Nicolas Graf',
   street: 'Reineckerstraße 40',
   city: '09126 Chemnitz',
   country: 'Deutschland',
-  email: 'musik@nicolazz.com',
+  email: 'kontakt@ella-ess.de',
   phone: '0174 3870799',
 } as const;
 
