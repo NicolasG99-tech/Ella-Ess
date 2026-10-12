@@ -23,6 +23,18 @@ export interface PlanDefinition {
   /** Name der Env-Variable, die die Stripe-Price-ID für diesen Tarif enthält. */
   priceEnvVar: 'STRIPE_PRICE_BASIC' | 'STRIPE_PRICE_FAMILY' | 'STRIPE_PRICE_SCHOOL';
   maxChildProfiles: number;
+  /**
+   * Monatlicher Anzeigepreis in Cent, inkl. MwSt. — `null` bedeutet „Preis auf
+   * Anfrage“ (kein Self-Service-Checkout).
+   *
+   * Nur zur ANZEIGE auf /preise: Abgerechnet wird ausschließlich der in Stripe
+   * hinterlegte Preis (Price-ID aus `priceEnvVar`). Beide Werte müssen daher
+   * von Hand identisch gehalten werden — siehe .env.example, Abschnitt
+   * „Zahlungssystem“, Schritt 1. Bewusst kein Live-Abruf des Preises bei
+   * Stripe: Die Preisseite soll ohne Stripe-Konfiguration renderbar bleiben
+   * (lokale Entwicklung, Demo-Zugang).
+   */
+  monthlyPriceCents: number | null;
   features: string[];
 }
 
@@ -33,6 +45,8 @@ export const PLAN_CATALOG: PlanDefinition[] = [
     description: 'Für den Einstieg mit einem Kind.',
     priceEnvVar: 'STRIPE_PRICE_BASIC',
     maxChildProfiles: 1,
+    // Preisentscheidung Nicolas, 2026-10-12: Einstieg ~15 €/Monat inkl. MwSt.
+    monthlyPriceCents: 1500,
     features: [
       'Ein Kinderprofil',
       'Alle Geschichten, Übungen und Belohnungen',
@@ -45,6 +59,8 @@ export const PLAN_CATALOG: PlanDefinition[] = [
     description: 'Für Familien mit mehreren Kindern.',
     priceEnvVar: 'STRIPE_PRICE_FAMILY',
     maxChildProfiles: MAX_CHILD_PROFILES_PER_PARENT,
+    // Preisentscheidung Nicolas, 2026-10-12.
+    monthlyPriceCents: 2200,
     features: [
       `Bis zu ${MAX_CHILD_PROFILES_PER_PARENT} Kinderprofile`,
       'Alle Geschichten, Übungen und Belohnungen',
@@ -60,6 +76,9 @@ export const PLAN_CATALOG: PlanDefinition[] = [
       'ein vollständiges Klassen-/Organisationskonzept ist in Planung.',
     priceEnvVar: 'STRIPE_PRICE_SCHOOL',
     maxChildProfiles: MAX_CHILD_PROFILES_PER_PARENT,
+    // Preisentscheidung Nicolas, 2026-10-12: Schulen individuell auf Anfrage,
+    // solange es kein Klassen-/Organisationskonzept gibt (siehe oben).
+    monthlyPriceCents: null,
     features: [
       `Bis zu ${MAX_CHILD_PROFILES_PER_PARENT} Kinderprofile (Klassenweite Verwaltung in Planung)`,
       'Alle Geschichten, Übungen und Belohnungen',
@@ -80,14 +99,37 @@ export function getPlanDefinition(tier: PlanTier): PlanDefinition {
   return plan;
 }
 
+/** Ob ein Tarif direkt über /preise per Stripe-Checkout buchbar ist (sonst „auf Anfrage“). */
+export function isSelfServicePlan(plan: PlanDefinition): boolean {
+  return plan.monthlyPriceCents !== null;
+}
+
+/**
+ * Formatiert den monatlichen Anzeigepreis eines Tarifs für die Preisseite.
+ * @param plan - Tarif aus `PLAN_CATALOG`.
+ * @returns z. B. „15,00 €“, oder „Preis auf Anfrage“ bei Tarifen ohne Listenpreis.
+ */
+export function formatMonthlyPrice(plan: PlanDefinition): string {
+  if (plan.monthlyPriceCents === null) return 'Preis auf Anfrage';
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(
+    plan.monthlyPriceCents / 100,
+  );
+}
+
 /**
  * Liest die Stripe-Price-ID eines Tarifs aus der Umgebung.
  * @throws wenn die zugehörige Env-Variable nicht gesetzt ist — ein Tarif
  *   ohne konfigurierte Price-ID darf nie stillschweigend einen falschen Preis
  *   berechnen.
+ * @throws wenn der Tarif „auf Anfrage“ ist — sonst könnte ein manipulierter
+ *   Aufruf von createCheckoutSessionAction() einen Tarif buchen, für den die
+ *   Preisseite gar keinen Preis genannt hat (Preistransparenz vor Vertragsschluss).
  */
 export function getStripePriceId(tier: PlanTier): string {
   const plan = getPlanDefinition(tier);
+  if (!isSelfServicePlan(plan)) {
+    throw new Error(`Tarif "${tier}" ist nur auf Anfrage buchbar, nicht per Self-Service-Checkout.`);
+  }
   const priceId = process.env[plan.priceEnvVar];
   if (!priceId) {
     throw new Error(

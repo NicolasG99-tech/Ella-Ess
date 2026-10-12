@@ -11,6 +11,14 @@ Siehe AGENTS.md, Abschnitt "Dokumentationsstandard" für die Pflege-Regeln diese
 
 ### Hinzugefügt
 
+- **Preise auf `/preise` sichtbar** (Preisentscheidung 2026-10-12): Basic 15,00 €,
+  Familie 22,00 €, jeweils pro Monat inkl. MwSt.; Schule „Preis auf Anfrage“ ohne
+  Checkout-Button. Anzeigepreise stehen in `monthlyPriceCents`
+  (`src/lib/billing/plans.ts`) und müssen von Hand mit den Stripe-Preisen
+  übereinstimmen (Abrechnungsquelle bleibt Stripe). `getStripePriceId()` lehnt
+  „auf Anfrage“-Tarife ab, sodass auch ein direkter Aufruf von
+  `createCheckoutSessionAction('school')` keinen Checkout mehr startet
+  (Verhaltensänderung). Tests: `tests/unit/billing-plans.test.ts`.
 - **Bezahlsystem (Stripe)** — Ergebnis der Produktentscheidung "Jetzt Zahlungsmodell"
   (2026-07-28): drei gestaffelte Tarife (Basic/Familie/Schule, `src/lib/billing/plans.ts`),
   vorerst ohne kostenlose Testphase. Neue `Subscription`-Tabelle
@@ -65,6 +73,19 @@ Siehe AGENTS.md, Abschnitt "Dokumentationsstandard" für die Pflege-Regeln diese
   Ergebnis der Sicherheitsprüfung vom 2026-07-28, Punkt 10.
 
 ### Behoben
+
+- **Stripe-Webhook: Abo-Status explizit abgebildet** (`src/lib/billing/subscriptionService.ts`):
+  Der Stripe-Status wurde bisher ungeprüft in das Prisma-Enum `SubscriptionStatus`
+  geschrieben (Typfehler bei `tsc`; ein künftiger, unbekannter Stripe-Status hätte zur
+  Laufzeit den DB-Schreibvorgang und damit den Webhook scheitern lassen).
+  `mapStripeSubscriptionStatus()` ordnet jetzt jeden bekannten Status einzeln zu und
+  speichert unbekannte Status „fail closed“ als `incomplete` (kein Zugang, Fehler im
+  Log). Benachrichtigungsmails bestätigen bei nicht aktivem Status (z. B. `paused`)
+  keinen laufenden Tarif mehr. Der Audit-Eintrag `subscription.sync` enthält zusätzlich
+  den rohen Stripe-Status (`stripeStatus`, auf 64 Zeichen gekürzt). Tests:
+  `tests/unit/billing-subscription-service.test.ts`, `tests/unit/stripe-webhook-route.test.ts`
+  und `tests/unit/stripe-webhook-signature.test.ts` (echte SDK-Signaturprüfung:
+  manipulierter Body, falsches Secret und veralteter Zeitstempel werden mit 400 abgelehnt).
 
 - Cookie-Banner: Nach Annehmen/Ablehnen der Cookies war die Seite nicht mehr
   aufrufbar (Endlos-Rendering). Ursache: `getStoredConsent()` lieferte bei jedem

@@ -105,6 +105,7 @@ export async function syncSubscriptionFromStripe(stripeSubscription: Stripe.Subs
     ? new Date(currentPeriodEndSeconds * 1000)
     : new Date();
 
+  const status = mapStripeSubscriptionStatus(stripeSubscription.status, stripeSubscription.id);
   const previous = await db.subscription.findUnique({ where: { userId: user.id } });
 
   await db.subscription.upsert({
@@ -112,7 +113,7 @@ export async function syncSubscriptionFromStripe(stripeSubscription: Stripe.Subs
     create: {
       userId: user.id,
       planTier,
-      status: stripeSubscription.status,
+      status,
       stripeSubscriptionId: stripeSubscription.id,
       stripePriceId: priceId,
       currentPeriodEnd,
@@ -120,7 +121,7 @@ export async function syncSubscriptionFromStripe(stripeSubscription: Stripe.Subs
     },
     update: {
       planTier,
-      status: stripeSubscription.status,
+      status,
       stripeSubscriptionId: stripeSubscription.id,
       stripePriceId: priceId,
       currentPeriodEnd,
@@ -133,22 +134,79 @@ export async function syncSubscriptionFromStripe(stripeSubscription: Stripe.Subs
     action: 'subscription.sync',
     targetType: 'Subscription',
     targetId: stripeSubscription.id,
-    metadata: { planTier, status: stripeSubscription.status },
+    // Roher Stripe-Status zusätzlich, damit ein auf `incomplete` gemappter
+    // unbekannter Status im Audit-Log nachvollziehbar bleibt; gekürzt als
+    // Defense in Depth gegen unerwartet lange Werte.
+    metadata: { planTier, status, stripeStatus: String(stripeSubscription.status).slice(0, 64) },
   });
 
   const isNewTier = !previous || previous.planTier !== planTier;
-  const isNewStatus = !previous || previous.status !== stripeSubscription.status;
+  const isNewStatus = !previous || previous.status !== status;
   if (isNewTier || isNewStatus) {
     await sendPaymentMethodChangedEmail(
       user.email,
-      describeSubscriptionChange(planTier, stripeSubscription.status, stripeSubscription.cancel_at_period_end),
+      describeSubscriptionChange(planTier, status, stripeSubscription.cancel_at_period_end),
     );
   }
 }
 
+// Lookup-Tabelle statt `switch`: Stripes `Status` enthält `string & {}`,
+// wodurch TypeScript im switch nicht auf die Literal-Typen verengt.
+// Objekt ohne Prototyp, damit ein unerwarteter Status wie "constructor"
+// nicht versehentlich eine geerbte Object-Eigenschaft trifft.
+const STRIPE_STATUS_MAP: Readonly<Record<string, SubscriptionStatus | undefined>> = Object.assign(
+  Object.create(null) as Record<string, SubscriptionStatus>,
+  {
+    trialing: 'trialing',
+    active: 'active',
+    past_due: 'past_due',
+    canceled: 'canceled',
+    incomplete: 'incomplete',
+    incomplete_expired: 'incomplete_expired',
+    unpaid: 'unpaid',
+    paused: 'paused',
+  } satisfies Record<SubscriptionStatus, SubscriptionStatus>,
+);
+
+/**
+ * Bildet den Stripe-Subscription-Status explizit auf das Prisma-Enum
+ * `SubscriptionStatus` ab.
+ *
+ * Warum nicht einfach durchreichen: Stripe typisiert `Subscription.Status`
+ * bewusst offen (bekannte Werte + beliebiger String), weil Stripe jederzeit
+ * neue Status einführen kann. Das Prisma-Enum ist dagegen geschlossen — ein
+ * unbekannter Wert würde erst beim DB-Schreiben mit einem Laufzeitfehler
+ * scheitern (Webhook → 500 → endlose Stripe-Wiederholungen, lokaler Stand
+ * veraltet). Darum wird hier jeder bekannte Wert einzeln zugeordnet und ein
+ * unbekannter Wert bewusst auf `incomplete` gesetzt: „fail closed“ — er
+ * zählt nicht zu ACTIVE_STATUSES, gewährt also keinen kostenpflichtigen
+ * Zugang, bis jemand den neuen Status geprüft und hier ergänzt hat. Das
+ * `console.error` macht den Fall im Log sichtbar. (`paused` ist bereits
+ * Teil des Enums und wird regulär übernommen — ebenfalls ohne Zugang.)
+ *
+ * @param stripeStatus - `status` aus dem Stripe-Subscription-Objekt.
+ * @param stripeSubscriptionId - Nur für die Log-Meldung bei unbekanntem Status.
+ * @returns Der passende Enum-Wert, bei unbekanntem Status `incomplete`.
+ * @sideeffect Schreibt bei unbekanntem Status eine Fehlermeldung ins Log.
+ */
+export function mapStripeSubscriptionStatus(
+  stripeStatus: Stripe.Subscription.Status,
+  stripeSubscriptionId: string,
+): SubscriptionStatus {
+  const mapped = STRIPE_STATUS_MAP[stripeStatus];
+  if (mapped) return mapped;
+  console.error(
+    // JSON.stringify + Kürzung: verhindert Zeilenumbrüche/Steuerzeichen
+    // (Log-Injection) und überlange Werte im Log.
+    `[Stripe-Webhook] Unbekannter Subscription-Status ${JSON.stringify(String(stripeStatus).slice(0, 64))} bei ${stripeSubscriptionId} ` +
+      '— wird als "incomplete" (kein Zugang) gespeichert; Mapping in subscriptionService.ts ergänzen.',
+  );
+  return 'incomplete';
+}
+
 function describeSubscriptionChange(
   planTier: string,
-  status: Stripe.Subscription.Status,
+  status: SubscriptionStatus,
   cancelAtPeriodEnd: boolean,
 ): string {
   const planName = planTier.charAt(0).toUpperCase() + planTier.slice(1);
@@ -161,6 +219,12 @@ function describeSubscriptionChange(
   if (status === 'past_due' || status === 'unpaid') {
     return `Für dein Abo (Tarif "${planName}") konnte die letzte Zahlung nicht abgebucht werden. Bitte prüfe deine Zahlungsmethode.`;
   }
+  // Ohne diesen Zweig fiele z. B. `paused` oder ein unbekannter (→ incomplete)
+  // Status in die „aktiver Tarif“-Meldung und würde Eltern fälschlich einen
+  // laufenden Zugang bestätigen.
+  if (!ACTIVE_STATUSES.includes(status)) {
+    return `Der Status deines Abos (Tarif "${planName}") hat sich geändert; der Zugang ist derzeit nicht aktiv. Details findest du unter „Mein Abo“.`;
+  }
   return `Dein Abo wurde aktualisiert: aktiver Tarif ist jetzt "${planName}".`;
 }
 
@@ -168,6 +232,13 @@ function describeSubscriptionChange(
  * Entfernt die lokale Subscription-Zeile, wenn Stripe eine Subscription
  * endgültig löscht (nicht zu verwechseln mit "gekündigt zum Periodenende" —
  * das bleibt bis zum tatsächlichen Ende `status: canceled`, siehe oben).
+ * Wird ausschließlich vom Webhook-Handler bei
+ * `customer.subscription.deleted` aufgerufen.
+ *
+ * @param stripeSubscriptionId - Stripe-ID der gelöschten Subscription.
+ * @sideeffect Löscht 0 oder 1 Subscription-Zeile; idempotent (deleteMany
+ *   statt delete), damit eine wiederholte Stripe-Zustellung nicht mit
+ *   „Record not found“ scheitert.
  */
 export async function deleteLocalSubscription(stripeSubscriptionId: string): Promise<void> {
   await db.subscription.deleteMany({ where: { stripeSubscriptionId } });

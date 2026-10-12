@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { auth } from '@/lib/server/auth';
-import { PLAN_CATALOG } from '@/lib/billing/plans';
+import { PLAN_CATALOG, formatMonthlyPrice, isSelfServicePlan } from '@/lib/billing/plans';
 import { CheckoutButton } from '@/features/billing/CheckoutButton';
 
 export const metadata: Metadata = { title: 'Tarife — Lese-Abenteuer' };
@@ -29,6 +29,15 @@ export default async function PricingPage() {
             <div>
               <h2 className="text-xl font-bold text-stone-900">{plan.name}</h2>
               <p className="mt-1 text-sm text-stone-600">{plan.description}</p>
+              {/* Endpreis inkl. MwSt. und Abrechnungszeitraum direkt am Tarif —
+                  Pflichtangaben nach PAngV, und der Preis soll vor dem Wechsel
+                  zu Stripe feststehen, nicht erst auf der Checkout-Seite. */}
+              <p className="mt-3">
+                <span className="text-2xl font-bold text-stone-900">{formatMonthlyPrice(plan)}</span>
+                {isSelfServicePlan(plan) && (
+                  <span className="text-sm text-stone-600"> / Monat inkl. MwSt.</span>
+                )}
+              </p>
             </div>
             <ul className="flex flex-1 flex-col gap-2 text-sm text-stone-700">
               {plan.features.map((feature) => (
@@ -38,7 +47,13 @@ export default async function PricingPage() {
                 </li>
               ))}
             </ul>
-            {isLoggedIn ? (
+            {!isSelfServicePlan(plan) ? (
+              // Kein Checkout-Button ohne genannten Preis — getStripePriceId()
+              // lehnt solche Tarife serverseitig ebenfalls ab.
+              <p className="rounded-md border border-stone-300 px-4 py-2 text-center text-sm text-stone-700">
+                Angebot für Schulen auf Anfrage
+              </p>
+            ) : isLoggedIn ? (
               <CheckoutButton planTier={plan.tier} planName={plan.name} />
             ) : (
               // Nicht angemeldet: erst zum Login/zur Registrierung, dann von
@@ -56,7 +71,7 @@ export default async function PricingPage() {
       </div>
 
       <p className="text-center text-xs text-stone-500">
-        Die Bezahlung läuft über unseren Zahlungsdienstleister Stripe. Der Vertrag kommt erst mit dem
+        Alle Preise sind monatliche Endpreise inkl. gesetzlicher MwSt. Die Bezahlung läuft über unseren Zahlungsdienstleister Stripe. Der Vertrag kommt erst mit dem
         Klick auf den zahlungspflichtigen Button auf der Stripe-Bezahlseite zustande. Du kannst dein Abo
         jederzeit über &bdquo;Mein Abo&rdquo; im Elternbereich kündigen.
       </p>

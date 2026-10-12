@@ -482,6 +482,12 @@ ohne kostenlose Testphase.
   (`CheckoutButton.tsx`) ist zusätzlich klar als "kostenpflichtig" beschriftet, auch
   wenn das rechtlich nicht zwingend an dieser Stelle nötig wäre — Transparenz soll
   nicht erst auf der zweiten Seite beginnen.
+- **Preisangaben (Stand 2026-10-12)**: `/preise` nennt pro Tarif den monatlichen
+  Endpreis inkl. MwSt. (PAngV) — Basic 15 €, Familie 22 €, Schule „auf Anfrage“.
+  Quelle der Anzeige ist `monthlyPriceCents` in `plans.ts`, abgerechnet wird der
+  Stripe-Preis; ein Auseinanderlaufen beider Werte wäre ein Transparenzmangel und
+  ist vor jeder Preisänderung manuell abzugleichen. Tarife ohne Listenpreis sind
+  serverseitig vom Checkout ausgeschlossen (`getStripePriceId()`).
 - **Kein Zugriff auf Zahlungsdaten**: Kreditkarten-/SEPA-Daten werden ausschließlich
   von Stripe erfasst und verarbeitet (gehostete Checkout-/Portal-Seiten) — die App
   selbst sieht und speichert niemals Zahlungsdetails, nur Stripes Kunden-/

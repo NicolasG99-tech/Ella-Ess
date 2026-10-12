@@ -25,7 +25,8 @@ MVP-Funktionsumfang vollständig umgesetzt:
   Probleme auf (fehlende `<main>`-Landmarks, leere Tabellen-Kopfzellen) — beide behoben.
 
 Seit 2026-07-28 zusätzlich: ein **Bezahlsystem (Stripe)** mit drei gestaffelten
-Tarifen (`/preise`, Verwaltung unter `/dashboard/abo`) — Checkout, Kündigung über das
+Tarifen (Basic 15 €/Monat, Familie 22 €/Monat, Schule auf Anfrage — jeweils inkl.
+MwSt.; `/preise`, Verwaltung unter `/dashboard/abo`) — Checkout, Kündigung über das
 Stripe-Kundenportal und Webhook-Synchronisation sind implementiert, aber noch NICHT
 scharf geschaltet: Es gibt aktuell keine Server Action, die ein aktives Abo
 tatsächlich voraussetzt. Details und offene Punkte siehe
@@ -80,7 +81,7 @@ sind unbedenkliche lokale Entwicklungswerte, keine Produktionsgeheimnisse.
 | `SPEECH_PROVIDER`                            | Spracherkennungs-Provider; im MVP nur `"mock"` implementiert                    |
 | `STRIPE_SECRET_KEY`                          | Stripe-API-Schlüssel für das Bezahlsystem (siehe docs/SECURITY.md, „Bezahlsystem (Stripe)")   |
 | `STRIPE_WEBHOOK_SECRET`                      | Signatur-Secret für den Stripe-Webhook-Endpunkt (`/api/webhooks/stripe`)        |
-| `STRIPE_PRICE_BASIC` / `_FAMILY` / `_SCHOOL` | Stripe-Price-IDs der drei Tarife, siehe `src/lib/billing/plans.ts`              |
+| `STRIPE_PRICE_BASIC` / `_FAMILY` / `_SCHOOL` | Stripe-Price-IDs der Tarife, siehe `src/lib/billing/plans.ts` (Beträge dort und in Stripe identisch halten; `_SCHOOL` derzeit ungenutzt, Tarif „auf Anfrage“) |
 | `DEMO_PARENT_EMAIL` / `DEMO_PARENT_PASSWORD` | Zugangsdaten für den Seed-Demo-Elternaccount                                    |
 | `DEMO_ADMIN_EMAIL` / `DEMO_ADMIN_PASSWORD`   | Zugangsdaten für das Seed-Admin-Konto (`/admin`, lokale Content-Verwaltung)     |
 
