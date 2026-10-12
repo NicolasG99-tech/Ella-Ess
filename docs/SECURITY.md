@@ -402,6 +402,13 @@ Umsetzung eines echten Bezahlsystems zwingend durch Jurist:innen zu prüfen (sie
   Kündigungsbutton (§ 312k BGB) und zahlungspflicht-konforme Bestellbuttons (§ 312j
   BGB) durch Jurist:in erstellen/prüfen lassen — siehe Abschnitt „Rechtlicher Rahmen
   für ein künftiges Bezahlsystem" oben für eine erste, unverbindliche Orientierung.
+- Impressum (`/impressum`, Entwurf seit 2026-10-12, Anbieter vorerst Nicolas Graf als
+  Kleinunternehmer) vor Live-Schaltung juristisch prüfen; geplanter Betrieb über eine
+  GmbH erfordert neues Impressum (Firma, Geschäftsführung, HRB, USt-ID). Achtung
+  Preisangaben: Als Kleinunternehmer (§ 19 UStG) darf keine MwSt. ausgewiesen werden
+  — „inkl. MwSt.“ auf `/preise` gilt erst für den Betrieb über die GmbH. Eigene
+  App-Domain + Kontaktadresse ist beschlossen (2026-10-12); bis dahin steht im
+  Impressum übergangsweise musik@nicolazz.com.
 - Echter Verifizierungsprozess für Fachkräfte- und Lehrkräfte-Konten (z.B. Nachweis der
   Berufszulassung/-registrierung bzw. Schulzugehörigkeit) statt des aktuellen
   Admin-Demo-Klicks — siehe docs/EDUCATIONAL_MODEL.md, Abschnitt „Später von Fachpersonal

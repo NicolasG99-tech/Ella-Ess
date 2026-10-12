@@ -50,9 +50,12 @@ export default async function PricingPage() {
             {!isSelfServicePlan(plan) ? (
               // Kein Checkout-Button ohne genannten Preis — getStripePriceId()
               // lehnt solche Tarife serverseitig ebenfalls ab.
-              <p className="rounded-md border border-stone-300 px-4 py-2 text-center text-sm text-stone-700">
-                Angebot für Schulen auf Anfrage
-              </p>
+              <Link
+                href="/impressum"
+                className="rounded-md border border-stone-300 px-4 py-2 text-center text-sm text-stone-700 underline"
+              >
+                Angebot für Schulen anfragen
+              </Link>
             ) : isLoggedIn ? (
               <CheckoutButton planTier={plan.tier} planName={plan.name} />
             ) : (

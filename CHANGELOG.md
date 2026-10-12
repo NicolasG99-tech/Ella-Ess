@@ -11,6 +11,12 @@ Siehe AGENTS.md, Abschnitt "Dokumentationsstandard" für die Pflege-Regeln diese
 
 ### Hinzugefügt
 
+- **Impressum (Entwurf/Mockup)** unter `/impressum` mit den Anbieterangaben aus
+  nicolazz.com, globaler Footer mit Links zu Impressum und Datenschutz auf jeder
+  Seite (`src/app/layout.tsx`). Der Schul-Tarif auf `/preise` verweist für Anfragen
+  jetzt dorthin. Anbieter vorerst Nicolas Graf (Kleinunternehmer); bei Umstellung
+  auf die geplante GmbH Firma, Geschäftsführung, Registereintrag und USt-ID
+  ergänzen. Vor Live-Schaltung juristisch prüfen.
 - **Preise auf `/preise` sichtbar** (Preisentscheidung 2026-10-12): Basic 15,00 €,
   Familie 22,00 €, jeweils pro Monat inkl. MwSt.; Schule „Preis auf Anfrage“ ohne
   Checkout-Button. Anzeigepreise stehen in `monthlyPriceCents`
